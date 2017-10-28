@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Nothing to see here...</title>
+  <style>
+#btn--yp {
+  box-sizing: content-box;
+  position: fixed;
+  z-index: 9;
+  bottom: 1rem;
+  right: 1rem;
+  border: solid 1rem transparent;
+  width: 4.625rem;
+  height: 3.25rem;
+  background: url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/2017/icon-yp.svg) 50%/cover content-box;
+  text-indent: 200vw;
+  text-shadow: none;
+  filter: grayscale(1) drop-shadow(0 0 1px #e8e0e0);
+  transition: .5s;
+  white-space: nowrap;
+}
+#btn--yp:before {
+  position: absolute;
+  left: 0;
+  bottom: 100%;
+  margin: 1rem -.5rem;
+  padding: .5rem;
+  width: 100%;
+  border-radius: 5px;
+  background: #e8e0e0;
+  color: #000;
+  font: 1rem/1.25rem trebuchet ms, sans-serif;
+  text-align: center;
+  text-decoration: none;
+  text-indent: 0vw;
+  white-space: normal;
+  animation: float 1s ease-in-out infinite alternate;
+  content: attr(data-txt);
+}
+#btn--yp:hover, #btn--yp:focus {
+  outline: none;
+  filter: grayscale(0) drop-shadow(0 0 1px crimson);
+}
+
+@keyframes float {
+  to {
+    transform: translateY(0.75rem);
+  }
+}
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0;
+  height: 100vh;
+  background: dimgray;
+}
+
+section {
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+  height: 32em;
+  background: black;
+  filter: contrast(2);
+}
+
+div {
+  position: absolute;
+  animation: a 4s linear infinite;
+}
+
+.a {
+  top: 50%;
+  left: 50%;
+  transform: rotate(45deg);
+  filter: blur(1px);
+}
+
+@keyframes a {
+  0% {
+    transform: scale(0.29289);
+  }
+}
+.tri {
+  margin: -4em;
+  width: 8em;
+  height: 8em;
+  background: linear-gradient(-45deg, transparent 50%, white 0);
+  mix-blend-mode: difference;
+  animation-timing-function: ease-in-out;
+}
+.tri:nth-child(1) {
+  --br: rotate(22.5deg);
+  animation-name: a1;
+}
+@keyframes a1 {
+  0%,
+			0% {
+    transform: var(--br) translate(-9.65685em, -9.65685em);
+  }
+  100%,
+			12.5% {
+    transform: var(--br) translate(0em, 0em);
+  }
+}
+.tri:nth-child(2) {
+  --br: rotate(67.5deg);
+  animation-name: a2;
+}
+@keyframes a2 {
+  0%,
+			12.5% {
+    transform: var(--br) translate(-9.65685em, -9.65685em);
+  }
+  100%,
+			25% {
+    transform: var(--br) translate(0em, 0em);
+  }
+}
+.tri:nth-child(3) {
+  --br: rotate(112.5deg);
+  animation-name: a3;
+}
+@keyframes a3 {
+  0%,
+			25% {
+    transform: var(--br) translate(-9.65685em, -9.65685em);
+  }
+  100%,
+			37.5% {
+    transform: var(--br) translate(-38.62742em, -38.62742em);
+  }
+}
+.tri:nth-child(4) {
+  --br: rotate(157.5deg);
+  animation-name: a4;
+}
+@keyframes a4 {
+  0%,
+			37.5% {
+    transform: var(--br) translate(-9.65685em, -9.65685em);
+  }
+  100%,
+			50% {
+    transform: var(--br) translate(-38.62742em, -38.62742em);
+  }
+}
+.tri:nth-child(5) {
+  --br: rotate(202.5deg);
+  animation-name: a5;
+}
+@keyframes a5 {
+  0%,
+			50% {
+    transform: var(--br) translate(-9.65685em, -9.65685em);
+  }
+  100%,
+			62.5% {
+    transform: var(--br) translate(0em, 0em);
+  }
+}
+.tri:nth-child(6) {
+  --br: rotate(247.5deg);
+  animation-name: a6;
+}
+@keyframes a6 {
+  0%,
+			62.5% {
+    transform: var(--br) translate(-9.65685em, -9.65685em);
+  }
+  100%,
+			75% {
+    transform: var(--br) translate(0em, 0em);
+  }
+}
+.tri:nth-child(7) {
+  --br: rotate(292.5deg);
+  animation-name: a7;
+}
+@keyframes a7 {
+  0%,
+			75% {
+    transform: var(--br) translate(-9.65685em, -9.65685em);
+  }
+  100%,
+			87.5% {
+    transform: var(--br) translate(-38.62742em, -38.62742em);
+  }
+}
+.tri:nth-child(8) {
+  --br: rotate(337.5deg);
+  animation-name: a8;
+}
+@keyframes a8 {
+  0%,
+			87.5% {
+    transform: var(--br) translate(-9.65685em, -9.65685em);
+  }
+  100%,
+			100% {
+    transform: var(--br) translate(-38.62742em, -38.62742em);
+  }
+}  
+  </style>
+</head>
+<body>
+  <section>
+  <div class='a'>
+    <div class='tri'></div>
+    <div class='tri'></div>
+    <div class='tri'></div>
+    <div class='tri'></div>
+    <div class='tri'></div>
+    <div class='tri'></div>
+    <div class='tri'></div>
+    <div class='tri'></div>
+  </div>
+</section>
+</body>
+</html>
