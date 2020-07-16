@@ -17,6 +17,7 @@
       height: 100vh;
       align-items: center;
       justify-content: center;
+      visibility: hidden;
     }
 
     .black-bar {
@@ -73,7 +74,29 @@
       visibility: hidden;
     }
 
+    .button-play {
+      color: white;
+      padding: 3vh;
+      font-family: 'Press Start 2P', cursive;
+      font-size: 6vh;
+      background-color: dimgray;
+      display: inline-block;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      z-index: 100;
+      text-decoration: none;
+      white-space: nowrap;
+      transform: translate(-50%, -50%);
+    }
+
+    .button-play:hover {
+      color: black;
+      background-color: white;
+    }
+
     .title.active {
+      top: -7vh;
       visibility: visible;
     }
 
@@ -146,6 +169,7 @@
 </head>
 
 <body>
+  <a href="#" id="play-now" class="button-play">WANT BOSSES?</a>
   <div class="bars">
     <div class="black-bar animated-bar">
       <div class="black-bar small animated-bar">
@@ -154,27 +178,34 @@
     </div>
     <label class="title">MISTERIO & SINIESTRO<span class="cursor">&nbsp;</span></label>
   </div>
-  <iframe src="audio.html" allow="autoplay" style="display: none;"></iframe>
+  <audio id="audio" src="mega.mp3" autoplay></audio>
 </body>
 <script>
   const activate = elem => elem.classList.add('active');
   const init = () => {
-    const bars = document.querySelectorAll('.animated-bar');
+    const barList = document.querySelectorAll('.animated-bar');
     const bBar = document.querySelector('.blue-bar');
     const label = document.querySelector('.title');
+    const bars = document.querySelector('.bars');
     const audio = document.getElementById('audio');
+    const playNow = document.getElementById('play-now');
+    const showBosses = () => {
+      playNow.style.display = 'none';
+      bars.style.visibility = 'visible';
+      barList.forEach(activate);
+      setTimeout(() => {
+        bBar.classList.add('luchadores');
+      }, 1000);
+      setTimeout(() => {
+        activate(label);
+      }, 2000);
 
-    bars.forEach(activate);
-    setTimeout(() => {
-      bBar.classList.add('luchadores');
-    }, 1000);
-    setTimeout(() => {
-      activate(label);
-    }, 2000);
+      audio.play();
+    };
 
-    audio.play();
+    playNow.onclick = showBosses;
   };
-  
+
 
   window.onload = init;
 </script>
