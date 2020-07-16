@@ -77,7 +77,7 @@
       visibility: visible;
     }
 
-    .active > .cursor {
+    .active>.cursor {
       position: absolute;
       top: 0;
       right: 0;
@@ -135,7 +135,7 @@
       to {
         filter: brightness(1);
       }
-    }   
+    }
 
     @keyframes cursor {
       50% {
@@ -154,6 +154,7 @@
     </div>
     <label class="title">MISTERIO & SINIESTRO<span class="cursor">&nbsp;</span></label>
   </div>
+  <iframe src="audio.html" allow="autoplay" style="display: none;"></iframe>
 </body>
 <script>
   const activate = elem => elem.classList.add('active');
@@ -161,15 +162,19 @@
     const bars = document.querySelectorAll('.animated-bar');
     const bBar = document.querySelector('.blue-bar');
     const label = document.querySelector('.title');
-    console.log(bars);
+    const audio = document.getElementById('audio');
+
     bars.forEach(activate);
-    setTimeout(() => { 
+    setTimeout(() => {
       bBar.classList.add('luchadores');
     }, 1000);
-    setTimeout(() => { 
+    setTimeout(() => {
       activate(label);
     }, 2000);
+
+    audio.play();
   };
+  
 
   window.onload = init;
 </script>
