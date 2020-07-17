@@ -1,0 +1,158 @@
+body {
+  background-color: black;
+  overflow: hidden;
+}
+
+.bars {
+  display: flex;
+  flex-flow: column;
+  height: 100vh;
+  align-items: center;
+  justify-content: center;
+  visibility: hidden;
+  margin: 0 auto;
+}
+
+.black-bar {
+  border-bottom: 0.4rem solid white;
+  border-top: 0.4rem solid white;
+  background-color: black;
+}
+
+.blue-bar {
+  border-bottom: 0.8rem solid cyan;
+  border-top: 0.8rem solid cyan;
+  background-color: blue;
+}
+
+.luchadores {
+  background-image: url(m_n_s.png);
+  background-position: bottom center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  animation: brillo 3s steps(20) forwards;
+}
+
+.animated-bar {
+  transition-property: padding;
+  padding-top: 0rem;
+  padding-bottom: 0rem;
+  transition-duration: 1s;
+  width: 100%;
+  overflow: hidden;
+}
+
+.black-bar.active {
+  padding-top: 10rem;
+  padding-bottom: 10rem;
+}
+
+.black-bar.small.active {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.blue-bar.active {
+  padding-top: 20rem;
+  padding-bottom: 20rem;
+}
+
+.title {
+  display: block;
+  color: white;
+  font-family: "Press Start 2P", cursive;
+  font-size: 4.5rem;
+  position: relative;
+  top: -7rem;
+  visibility: hidden;
+}
+
+.button-play {
+  color: white;
+  padding: 3rem;
+  font-family: "Press Start 2P", cursive;
+  font-size: 6rem;
+  background-color: dimgray;
+  display: inline-block;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 100;
+  text-decoration: none;
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+}
+
+.button-play:hover {
+  color: black;
+  background-color: white;
+}
+
+.title.active {
+  top: -7rem;
+  visibility: visible;
+}
+
+.active > .cursor {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: black;
+  width: 100%;
+  border-left: 0.5rem solid transparent;
+  top: -0.2rem;
+  animation: typing 3s steps(20) forwards, cursor 1s infinite;
+}
+
+/* Animation */
+@-webkit-keyframes typing {
+  from {
+    width: 100%;
+  }
+
+  to {
+    width: 0;
+  }
+}
+
+@-webkit-keyframes brillo {
+  from {
+    filter: brightness(10);
+  }
+
+  to {
+    filter: brightness(1);
+  }
+}
+
+@-webkit-keyframes cursor {
+  50% {
+    border-color: white;
+  }
+}
+
+@keyframes typing {
+  from {
+    width: 100%;
+  }
+
+  to {
+    width: 0;
+  }
+}
+
+@keyframes brillo {
+  from {
+    filter: brightness(10);
+  }
+
+  to {
+    filter: brightness(1);
+  }
+}
+
+@keyframes cursor {
+  50% {
+    border-color: white;
+  }
+}
