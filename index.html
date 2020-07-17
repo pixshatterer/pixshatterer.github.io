@@ -1,224 +1,213 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <title>Nothing to see here...</title>
+  <title>Asi es esto</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <style>
-#btn--yp {
-  box-sizing: content-box;
-  position: fixed;
-  z-index: 9;
-  bottom: 1rem;
-  right: 1rem;
-  border: solid 1rem transparent;
-  width: 4.625rem;
-  height: 3.25rem;
-  background: url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/2017/icon-yp.svg) 50%/cover content-box;
-  text-indent: 200vw;
-  text-shadow: none;
-  filter: grayscale(1) drop-shadow(0 0 1px #e8e0e0);
-  transition: .5s;
-  white-space: nowrap;
-}
-#btn--yp:before {
-  position: absolute;
-  left: 0;
-  bottom: 100%;
-  margin: 1rem -.5rem;
-  padding: .5rem;
-  width: 100%;
-  border-radius: 5px;
-  background: #e8e0e0;
-  color: #000;
-  font: 1rem/1.25rem trebuchet ms, sans-serif;
-  text-align: center;
-  text-decoration: none;
-  text-indent: 0vw;
-  white-space: normal;
-  animation: float 1s ease-in-out infinite alternate;
-  content: attr(data-txt);
-}
-#btn--yp:hover, #btn--yp:focus {
-  outline: none;
-  filter: grayscale(0) drop-shadow(0 0 1px crimson);
-}
+    body {
+      background-color: black;
+    }
 
-@keyframes float {
-  to {
-    transform: translateY(0.75rem);
-  }
-}
-body {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin: 0;
-  height: 100vh;
-  background: dimgray;
-}
+    .bars {
+      display: flex;
+      flex-flow: column;
+      height: 100vh;
+      align-items: center;
+      justify-content: center;
+      visibility: hidden;
+    }
 
-section {
-  overflow: hidden;
-  position: relative;
-  width: 100%;
-  height: 32em;
-  background: black;
-  filter: contrast(2);
-}
+    .black-bar {
+      border-bottom: 0.4vh solid white;
+      border-top: 0.4vh solid white;
+      background-color: black;
+    }
 
-div {
-  position: absolute;
-  animation: a 4s linear infinite;
-}
+    .blue-bar {
+      border-bottom: 0.8vh solid cyan;
+      border-top: 0.8vh solid cyan;
+      background-color: blue;
+    }
 
-.a {
-  top: 50%;
-  left: 50%;
-  transform: rotate(45deg);
-  filter: blur(1px);
-}
+    .luchadores {
+      background-image: url(m_n_s.png);
+      background-position: bottom center;
+      background-size: contain;
+      background-repeat: no-repeat;
+      animation: brillo 3s steps(20) forwards;
+    }
 
-@keyframes a {
-  0% {
-    transform: scale(0.29289);
-  }
-}
-.tri {
-  margin: -4em;
-  width: 8em;
-  height: 8em;
-  background: linear-gradient(-45deg, transparent 50%, white 0);
-  mix-blend-mode: difference;
-  animation-timing-function: ease-in-out;
-}
-.tri:nth-child(1) {
-  --br: rotate(22.5deg);
-  animation-name: a1;
-}
-@keyframes a1 {
-  0%,
-			0% {
-    transform: var(--br) translate(-9.65685em, -9.65685em);
-  }
-  100%,
-			12.5% {
-    transform: var(--br) translate(0em, 0em);
-  }
-}
-.tri:nth-child(2) {
-  --br: rotate(67.5deg);
-  animation-name: a2;
-}
-@keyframes a2 {
-  0%,
-			12.5% {
-    transform: var(--br) translate(-9.65685em, -9.65685em);
-  }
-  100%,
-			25% {
-    transform: var(--br) translate(0em, 0em);
-  }
-}
-.tri:nth-child(3) {
-  --br: rotate(112.5deg);
-  animation-name: a3;
-}
-@keyframes a3 {
-  0%,
-			25% {
-    transform: var(--br) translate(-9.65685em, -9.65685em);
-  }
-  100%,
-			37.5% {
-    transform: var(--br) translate(-38.62742em, -38.62742em);
-  }
-}
-.tri:nth-child(4) {
-  --br: rotate(157.5deg);
-  animation-name: a4;
-}
-@keyframes a4 {
-  0%,
-			37.5% {
-    transform: var(--br) translate(-9.65685em, -9.65685em);
-  }
-  100%,
-			50% {
-    transform: var(--br) translate(-38.62742em, -38.62742em);
-  }
-}
-.tri:nth-child(5) {
-  --br: rotate(202.5deg);
-  animation-name: a5;
-}
-@keyframes a5 {
-  0%,
-			50% {
-    transform: var(--br) translate(-9.65685em, -9.65685em);
-  }
-  100%,
-			62.5% {
-    transform: var(--br) translate(0em, 0em);
-  }
-}
-.tri:nth-child(6) {
-  --br: rotate(247.5deg);
-  animation-name: a6;
-}
-@keyframes a6 {
-  0%,
-			62.5% {
-    transform: var(--br) translate(-9.65685em, -9.65685em);
-  }
-  100%,
-			75% {
-    transform: var(--br) translate(0em, 0em);
-  }
-}
-.tri:nth-child(7) {
-  --br: rotate(292.5deg);
-  animation-name: a7;
-}
-@keyframes a7 {
-  0%,
-			75% {
-    transform: var(--br) translate(-9.65685em, -9.65685em);
-  }
-  100%,
-			87.5% {
-    transform: var(--br) translate(-38.62742em, -38.62742em);
-  }
-}
-.tri:nth-child(8) {
-  --br: rotate(337.5deg);
-  animation-name: a8;
-}
-@keyframes a8 {
-  0%,
-			87.5% {
-    transform: var(--br) translate(-9.65685em, -9.65685em);
-  }
-  100%,
-			100% {
-    transform: var(--br) translate(-38.62742em, -38.62742em);
-  }
-}  
+    .animated-bar {
+      transition-property: padding;
+      padding-top: 0vh;
+      padding-bottom: 0vh;
+      transition-duration: 1s;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    .black-bar.active {
+      padding-top: 10vh;
+      padding-bottom: 10vh;
+    }
+
+    .black-bar.small.active {
+      padding-top: 0.5vh;
+      padding-bottom: 0.5vh;
+    }
+
+    .blue-bar.active {
+      padding-top: 20vh;
+      padding-bottom: 20vh;
+    }
+
+    .title {
+      display: block;
+      color: white;
+      font-family: 'Press Start 2P', cursive;
+      font-size: 4.5vh;
+      position: relative;
+      top: -7vh;
+      visibility: hidden;
+    }
+
+    .button-play {
+      color: white;
+      padding: 3vh;
+      font-family: 'Press Start 2P', cursive;
+      font-size: 6vh;
+      background-color: dimgray;
+      display: inline-block;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      z-index: 100;
+      text-decoration: none;
+      white-space: nowrap;
+      transform: translate(-50%, -50%);
+    }
+
+    .button-play:hover {
+      color: black;
+      background-color: white;
+    }
+
+    .title.active {
+      top: -7vh;
+      visibility: visible;
+    }
+
+    .active>.cursor {
+      position: absolute;
+      top: 0;
+      right: 0;
+      background: black;
+      width: 100%;
+      border-left: 0.5vh solid transparent;
+      top: -0.2vh;
+      animation: typing 3s steps(20) forwards,
+        cursor 1s infinite;
+    }
+
+
+    /* Animation */
+    @-webkit-keyframes typing {
+      from {
+        width: 100%;
+      }
+
+      to {
+        width: 0;
+      }
+    }
+
+    @-webkit-keyframes brillo {
+      from {
+        filter: brightness(10);
+      }
+
+      to {
+        filter: brightness(1);
+      }
+    }
+
+    @-webkit-keyframes cursor {
+      50% {
+        border-color: white;
+      }
+    }
+
+    @keyframes typing {
+      from {
+        width: 100%;
+      }
+
+      to {
+        width: 0;
+      }
+    }
+
+    @keyframes brillo {
+      from {
+        filter: brightness(10);
+      }
+
+      to {
+        filter: brightness(1);
+      }
+    }
+
+    @keyframes cursor {
+      50% {
+        border-color: white;
+      }
+    }
   </style>
 </head>
+
 <body>
-  <section>
-  <div class='a'>
-    <div class='tri'></div>
-    <div class='tri'></div>
-    <div class='tri'></div>
-    <div class='tri'></div>
-    <div class='tri'></div>
-    <div class='tri'></div>
-    <div class='tri'></div>
-    <div class='tri'></div>
+  <a href="#" id="play-now" class="button-play">WANT BOSSES?</a>
+  <div class="bars">
+    <div class="black-bar animated-bar">
+      <div class="black-bar small animated-bar">
+        <div class="blue-bar animated-bar"></div>
+      </div>
+    </div>
+    <label class="title">MISTERIO & SINIESTRO<span class="cursor">&nbsp;</span></label>
   </div>
-</section>
+  <audio id="audio" src="mega.mp3" autoplay></audio>
 </body>
+<script>
+  const activate = elem => elem.classList.add('active');
+  const init = () => {
+    const barList = document.querySelectorAll('.animated-bar');
+    const bBar = document.querySelector('.blue-bar');
+    const label = document.querySelector('.title');
+    const bars = document.querySelector('.bars');
+    const audio = document.getElementById('audio');
+    const playNow = document.getElementById('play-now');
+    const showBosses = () => {
+      playNow.style.display = 'none';
+      bars.style.visibility = 'visible';
+      barList.forEach(activate);
+      setTimeout(() => {
+        bBar.classList.add('luchadores');
+      }, 1000);
+      setTimeout(() => {
+        activate(label);
+      }, 2000);
+
+      audio.play();
+    };
+
+    playNow.onclick = showBosses;
+  };
+
+
+  window.onload = init;
+</script>
+
 </html>
