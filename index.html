@@ -18,17 +18,18 @@
       align-items: center;
       justify-content: center;
       visibility: hidden;
+      margin: 0 auto;
     }
 
     .black-bar {
-      border-bottom: 0.4vh solid white;
-      border-top: 0.4vh solid white;
+      border-bottom: 0.4rem solid white;
+      border-top: 0.4rem solid white;
       background-color: black;
     }
 
     .blue-bar {
-      border-bottom: 0.8vh solid cyan;
-      border-top: 0.8vh solid cyan;
+      border-bottom: 0.8rem solid cyan;
+      border-top: 0.8rem solid cyan;
       background-color: blue;
     }
 
@@ -42,43 +43,43 @@
 
     .animated-bar {
       transition-property: padding;
-      padding-top: 0vh;
-      padding-bottom: 0vh;
+      padding-top: 0rem;
+      padding-bottom: 0rem;
       transition-duration: 1s;
       width: 100%;
       overflow: hidden;
     }
 
     .black-bar.active {
-      padding-top: 10vh;
-      padding-bottom: 10vh;
+      padding-top: 10rem;
+      padding-bottom: 10rem;
     }
 
     .black-bar.small.active {
-      padding-top: 0.5vh;
-      padding-bottom: 0.5vh;
+      padding-top: 0.5rem;
+      padding-bottom: 0.5rem;
     }
 
     .blue-bar.active {
-      padding-top: 20vh;
-      padding-bottom: 20vh;
+      padding-top: 20rem;
+      padding-bottom: 20rem;
     }
 
     .title {
       display: block;
       color: white;
       font-family: 'Press Start 2P', cursive;
-      font-size: 4.5vh;
+      font-size: 4.5rem;
       position: relative;
-      top: -7vh;
+      top: -7rem;
       visibility: hidden;
     }
 
     .button-play {
       color: white;
-      padding: 3vh;
+      padding: 3rem;
       font-family: 'Press Start 2P', cursive;
-      font-size: 6vh;
+      font-size: 6rem;
       background-color: dimgray;
       display: inline-block;
       position: absolute;
@@ -96,7 +97,7 @@
     }
 
     .title.active {
-      top: -7vh;
+      top: -7rem;
       visibility: visible;
     }
 
@@ -106,8 +107,8 @@
       right: 0;
       background: black;
       width: 100%;
-      border-left: 0.5vh solid transparent;
-      top: -0.2vh;
+      border-left: 0.5rem solid transparent;
+      top: -0.2rem;
       animation: typing 3s steps(20) forwards,
         cursor 1s infinite;
     }
@@ -181,6 +182,16 @@
   <audio id="audio" src="mega.mp3" autoplay></audio>
 </body>
 <script>
+  const docEl = document.documentElement;
+  const remUnit = () => {
+    const clientWidth = docEl.clientWidth;
+    const clientHeight = docEl.clientHeight;
+    return clientWidth > clientHeight ? '1vh' : '1vw';
+  }
+  const onResize = () => {
+    docEl.style.fontSize = remUnit();
+  }
+
   const activate = elem => elem.classList.add('active');
   const init = () => {
     const barList = document.querySelectorAll('.animated-bar');
@@ -203,11 +214,13 @@
       audio.play();
     };
 
+    onResize()
     playNow.onclick = showBosses;
   };
 
 
   window.onload = init;
+  window.onresize = onResize;
 </script>
 
 </html>
