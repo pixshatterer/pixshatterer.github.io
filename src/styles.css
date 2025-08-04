@@ -1,0 +1,20 @@
+.background {
+  background-color: rgb(120, 55, 230)
+}
+
+.logo {
+  background-image: url("https://frontend-assets.avscaracoltv.com/logo/menu_tv/Logo_close.png");
+}
+
+.progressBar {
+  background-color: rgb(49, 57, 251);
+}
+
+.splash {
+  background-image: center no-repeat url("./assets/ditu_splash.png");
+}
+
+.watermark {
+  background-image: url("./assets/watermark.png");
+  background-size: 57px 57px;
+}
