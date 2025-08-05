@@ -57,14 +57,6 @@ body {
 	display: block;
 }
 
-.progressBar::after {
-	content: "";
-	display: block;
-	height: 100%;
-	width: 30%;
-	background: #00ff00;
-}
-
 .splash img {
 	width: 60%;
 	height: auto;
