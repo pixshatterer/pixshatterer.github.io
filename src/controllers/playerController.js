@@ -12,7 +12,16 @@ export const PlayerController = {
     this.setupQualityOptimization();
     this.setupReactivePlayerControl();
     this.setupPlayerEventListeners();
-    console.log("✅ PlayerController initialized with quality optimization, reactive control and event listeners");
+    
+    this._impl?.addDebugMessage?.({
+      type: "CONTROLLER_INITIALIZED",
+      data: {
+        hasQualityOptimization: true,
+        hasReactiveControl: true,
+        hasEventListeners: true
+      },
+      source: "PLAYER_CONTROLLER",
+    });
   },
 
   // Set up quality optimization for better video quality
@@ -25,7 +34,14 @@ export const PlayerController = {
     // Configure player for better quality
     if (playerManager.setMediaPlaybackInfoHandler) {
       playerManager.setMediaPlaybackInfoHandler((_, mediaPlaybackInfo) => {
-        console.log("Setting media playback info for quality optimization");
+        this._impl?.addDebugMessage?.({
+          type: "PLAYBACK_INFO_HANDLER",
+          data: {
+            supportedCommands: mediaPlaybackInfo.supportedMediaCommands,
+            action: "Setting media playback info for quality optimization"
+          },
+          source: "QUALITY_OPTIMIZATION",
+        });
         
         // Request higher quality by default
         if (mediaPlaybackInfo.supportedMediaCommands) {
@@ -52,7 +68,15 @@ export const PlayerController = {
       playerManager.setMessageInterceptor(
         cast.framework.messages.MessageType.LOAD,
         (request) => {
-          console.log("Intercepting LOAD request for quality optimization");
+          this._impl?.addDebugMessage?.({
+            type: "LOAD_INTERCEPTOR",
+            data: {
+              action: "Intercepting LOAD request for quality optimization",
+              originalContentType: request.media?.contentType,
+              originalStreamType: request.media?.streamType
+            },
+            source: "QUALITY_OPTIMIZATION",
+          });
           
           // Enhance load request with quality preferences
           if (request.media) {
@@ -92,25 +116,52 @@ export const PlayerController = {
 
     const EventType = cast.framework.events.EventType;
 
-    console.log("Setting up player event listeners:", {
-      PLAYER_STATE_CHANGED: !!EventType.PLAYER_STATE_CHANGED,
-      TIME_UPDATE: !!EventType.TIME_UPDATE,
-      ERROR: !!EventType.ERROR,
+    this._impl?.addDebugMessage?.({
+      type: "EVENT_LISTENERS_SETUP",
+      data: {
+        PLAYER_STATE_CHANGED: !!EventType.PLAYER_STATE_CHANGED,
+        TIME_UPDATE: !!EventType.TIME_UPDATE,
+        ERROR: !!EventType.ERROR,
+        MEDIA_STATUS: !!EventType.MEDIA_STATUS,
+        MEDIA_INFORMATION_CHANGED: !!EventType.MEDIA_INFORMATION_CHANGED
+      },
+      source: "EVENT_SETUP",
     });
 
     // Player state changes
     if (EventType.PLAYER_STATE_CHANGED) {
       playerManager.addEventListener(EventType.PLAYER_STATE_CHANGED, (event) => {
-        console.log("Player state changed:", event.playerState);
-
         this._impl?.addDebugMessage?.({
           type: "PLAYER_STATE_CHANGED",
           data: { playerState: event.playerState },
           source: "CAF_EVENT",
         });
 
+        // When media starts playing, capture the actual media session info
         if (event.playerState === cast.framework.messages.PlayerState.PLAYING) {
           this.updatePlayback({ isPlaying: true });
+          
+          // Capture actual media session information
+          const mediaSession = playerManager.getMediaSession();
+          if (mediaSession) {
+            this._impl?.addDebugMessage?.({
+              type: "MEDIA_SESSION_INFO",
+              data: {
+                contentId: mediaSession.media?.contentId,
+                contentType: mediaSession.media?.contentType,
+                streamType: mediaSession.media?.streamType,
+                duration: mediaSession.media?.duration,
+                title: mediaSession.media?.metadata?.title,
+                subtitle: mediaSession.media?.metadata?.subtitle,
+                hasMetadata: !!mediaSession.media?.metadata,
+                metadataType: mediaSession.media?.metadata?.metadataType,
+                customData: mediaSession.media?.customData,
+                sessionId: mediaSession.sessionId,
+                mediaSessionId: mediaSession.mediaSessionId
+              },
+              source: "MEDIA_SESSION",
+            });
+          }
         } else if (event.playerState === cast.framework.messages.PlayerState.PAUSED) {
           this.updatePlayback({ isPlaying: false });
         }
@@ -129,8 +180,6 @@ export const PlayerController = {
     // Error handling with 905 error analysis
     if (EventType.ERROR) {
       playerManager.addEventListener(EventType.ERROR, (event) => {
-        console.error("Player error:", event);
-        
         const errorDetails = {
           errorCode: event.error,
           detailedErrorCode: event.detailedErrorCode,
@@ -179,6 +228,51 @@ export const PlayerController = {
         });
       });
     }
+
+    // Media loaded event to capture actual loaded media information
+    if (EventType.MEDIA_STATUS) {
+      playerManager.addEventListener(EventType.MEDIA_STATUS, (event) => {
+        this._impl?.addDebugMessage?.({
+          type: "MEDIA_STATUS",
+          data: {
+            playerState: event.playerState,
+            currentTime: event.currentTime,
+            duration: event.duration,
+            playbackRate: event.playbackRate,
+            volume: event.volume?.level,
+            muted: event.volume?.muted,
+            mediaSessionId: event.mediaSessionId,
+            mediaInfo: event.mediaInformation ? {
+              contentId: event.mediaInformation.contentId,
+              contentType: event.mediaInformation.contentType,
+              streamType: event.mediaInformation.streamType,
+              duration: event.mediaInformation.duration,
+              hasMetadata: !!event.mediaInformation.metadata,
+              title: event.mediaInformation.metadata?.title
+            } : null
+          },
+          source: "MEDIA_STATUS",
+        });
+      });
+    }
+
+    // Media information changed event
+    if (EventType.MEDIA_INFORMATION_CHANGED) {
+      playerManager.addEventListener(EventType.MEDIA_INFORMATION_CHANGED, (event) => {
+        this._impl?.addDebugMessage?.({
+          type: "MEDIA_INFO_CHANGED",
+          data: {
+            contentId: event.mediaInformation?.contentId,
+            contentType: event.mediaInformation?.contentType,
+            streamType: event.mediaInformation?.streamType,
+            duration: event.mediaInformation?.duration,
+            title: event.mediaInformation?.metadata?.title,
+            hasMetadata: !!event.mediaInformation?.metadata
+          },
+          source: "MEDIA_INFO_CHANGED",
+        });
+      });
+    }
   },
 
   // Set up reactive effect to control Cast player based on store changes
@@ -196,13 +290,31 @@ export const PlayerController = {
       const isLive = videoStore.isLive;
       const drm = videoStore.drm;
 
+      // Debug the entire videoStore state via overlay
+      this._impl?.addDebugMessage?.({
+        type: "STORE_STATE_DEBUG",
+        data: {
+          url: videoStore.url,
+          title: videoStore.title,
+          contentType: videoStore.contentType,
+          isLive: videoStore.isLive,
+          isLiveType: typeof videoStore.isLive,
+          isLiveValue: JSON.stringify(videoStore.isLive)
+        },
+        source: "REACTIVE_DEBUG",
+      });
+
       if (url?.trim()) {
-        console.log("🔄 PlayerController: Video store changed - loading media:", {
-          url,
-          title,
-          contentType,
-          isLive,
-          hasDRM: drm.enabled
+        this._impl?.addDebugMessage?.({
+          type: "LOADING_MEDIA",
+          data: {
+            url,
+            title,
+            contentType,
+            isLive,
+            hasDRM: drm.enabled
+          },
+          source: "REACTIVE_CONTROL",
         });
 
         try {
@@ -211,22 +323,33 @@ export const PlayerController = {
           mediaInfo.contentId = url;
           mediaInfo.contentType = contentType || "application/dash+xml";
           
-          // Debug the isLive value and stream type assignment
-          console.log("🔍 Stream type debug:", {
-            isLiveValue: isLive,
-            isLiveType: typeof isLive,
-            willSetToLive: !!isLive,
-            streamTypeConstants: {
-              LIVE: cast.framework.messages.StreamType.LIVE,
-              BUFFERED: cast.framework.messages.StreamType.BUFFERED
-            }
+          // Debug the isLive value and stream type assignment via overlay
+          this._impl?.addDebugMessage?.({
+            type: "STREAM_TYPE_DEBUG",
+            data: {
+              isLiveValue: isLive,
+              isLiveType: typeof isLive,
+              willSetToLive: !!isLive,
+              liveConstant: cast.framework.messages.StreamType.LIVE,
+              bufferedConstant: cast.framework.messages.StreamType.BUFFERED
+            },
+            source: "STREAM_TYPE_DEBUG",
           });
           
           mediaInfo.streamType = isLive 
             ? cast.framework.messages.StreamType.LIVE 
             : cast.framework.messages.StreamType.BUFFERED;
             
-          console.log("✅ Set streamType to:", mediaInfo.streamType, isLive ? "(LIVE)" : "(BUFFERED)");
+          // Debug the final stream type assignment
+          this._impl?.addDebugMessage?.({
+            type: "STREAM_TYPE_SET",
+            data: {
+              finalStreamType: mediaInfo.streamType,
+              streamTypeText: isLive ? "LIVE" : "BUFFERED",
+              isLiveInput: isLive
+            },
+            source: "STREAM_TYPE_DEBUG",
+          });
 
           // Add DRM configuration if enabled
           if (drm.enabled && drm.licenseUrl) {
@@ -250,7 +373,30 @@ export const PlayerController = {
           if (title) {
             mediaInfo.metadata = new cast.framework.messages.GenericMediaMetadata();
             mediaInfo.metadata.title = title;
+            mediaInfo.metadata.subtitle = `${isLive ? 'LIVE' : 'VOD'} Stream`;
+            
+            // Add additional metadata for better display
+            mediaInfo.metadata.images = [{
+              url: "https://via.placeholder.com/480x270/000000/FFFFFF?text=Video"
+            }];
+          } else {
+            // Even without title, provide basic metadata
+            mediaInfo.metadata = new cast.framework.messages.GenericMediaMetadata();
+            mediaInfo.metadata.title = isLive ? "Live Stream" : "Video Stream";
+            mediaInfo.metadata.subtitle = contentType || "Media Stream";
           }
+
+          // Debug the metadata we're setting
+          this._impl?.addDebugMessage?.({
+            type: "METADATA_SET",
+            data: {
+              title: mediaInfo.metadata.title,
+              subtitle: mediaInfo.metadata.subtitle,
+              hasImages: !!mediaInfo.metadata.images,
+              metadataType: mediaInfo.metadata.metadataType
+            },
+            source: "METADATA_DEBUG",
+          });
 
           // Create and configure load request
           const request = new cast.framework.messages.LoadRequestData();
@@ -271,7 +417,17 @@ export const PlayerController = {
           // Load the media
           playerManager.load(request);
           
-          console.log("✅ PlayerController: Media loaded reactively");
+          // Debug the load completion
+          this._impl?.addDebugMessage?.({
+            type: "MEDIA_LOADED",
+            data: {
+              success: true,
+              url,
+              streamType: mediaInfo.streamType,
+              isLiveFromStore: isLive
+            },
+            source: "REACTIVE_CONTROL",
+          });
           
           // Log debug message
           this._impl?.addDebugMessage?.({
@@ -289,8 +445,16 @@ export const PlayerController = {
           });
           
         } catch (error) {
-          console.error("❌ PlayerController: Failed to load media:", error);
-          this._impl?.addDebugError?.(error);
+          this._impl?.addDebugError?.({
+            message: "Failed to load media reactively",
+            data: {
+              error: error.message || error,
+              url,
+              isLive,
+              contentType
+            },
+            source: "REACTIVE_CONTROL",
+          });
         }
       }
     });

@@ -67,8 +67,6 @@ export async function initializeCastReceiver() {
     castContext.addCustomMessageListener(
       "urn:x-cast:com.ditu.control",
       (event) => {
-        console.log("Received custom message:", event);
-
         // Log debug message
         PlayerController._impl?.addDebugMessage?.({
           type: "CUSTOM_MESSAGE",
@@ -88,6 +86,20 @@ export async function initializeCastReceiver() {
               throw new Error("Stream URL is required");
             }
 
+            // Debug what we received
+            PlayerController._impl?.addDebugMessage?.({
+              type: "STREAM_DATA_RECEIVED",
+              data: {
+                isLive: streamData.isLive,
+                isLiveType: typeof streamData.isLive,
+                isLiveValue: JSON.stringify(streamData.isLive),
+                url: streamData.url,
+                title: streamData.title,
+                contentType: streamData.contentType
+              },
+              source: "CAST_MESSAGE",
+            });
+
             // Let PlayerController handle all the logic reactively
             PlayerController.loadStream({
               url: streamData.url || "",
@@ -97,10 +109,17 @@ export async function initializeCastReceiver() {
               drm: streamData.drm || null,
             });
 
-            console.log("✅ Stream data passed to PlayerController");
+            PlayerController._impl?.addDebugMessage?.({
+              type: "STREAM_PASSED_TO_CONTROLLER",
+              data: { success: true },
+              source: "CAST_MESSAGE",
+            });
           } catch (error) {
-            console.error("❌ Error processing Cast message:", error);
-            PlayerController._impl?.addDebugError?.(error);
+            PlayerController._impl?.addDebugError?.({
+              message: "Error processing Cast message",
+              data: error,
+              source: "CAST_MESSAGE",
+            });
           }
         }
       }
@@ -109,10 +128,19 @@ export async function initializeCastReceiver() {
     // Apply receiver options
     try {
       castContext.start(receiverOptions);
-      console.log("✅ Cast context started with custom options");
+      
+      PlayerController._impl?.addDebugMessage?.({
+        type: "CAST_CONTEXT_STARTED",
+        data: { withCustomOptions: true },
+        source: "CAST_SERVICE",
+      });
     } catch (error) {
       if (error.message?.includes("already provided") || error.message?.includes("already started")) {
-        console.log("⚠️ Cast context already started, using default options");
+        PlayerController._impl?.addDebugMessage?.({
+          type: "CAST_CONTEXT_ALREADY_STARTED",
+          data: { usingDefaults: true },
+          source: "CAST_SERVICE",
+        });
         // If already started, just get the existing context
         if (!castContext.isReady) {
           castContext.start();
@@ -135,7 +163,6 @@ export async function initializeCastReceiver() {
     // Listen for sender connection events (system-level, not player-level)
     if (SystemEventType?.SENDER_CONNECTED) {
       castContext.addEventListener(SystemEventType.SENDER_CONNECTED, () => {
-        console.log("Sender connected");
         setSenderConnected(true);
 
         // Log debug message
@@ -146,12 +173,15 @@ export async function initializeCastReceiver() {
         });
       });
     } else {
-      console.warn("SENDER_CONNECTED event type not available");
+      PlayerController._impl?.addDebugMessage?.({
+        type: "EVENT_TYPE_WARNING",
+        data: { missing: "SENDER_CONNECTED" },
+        source: "CAST_SERVICE",
+      });
     }
 
     if (SystemEventType?.SENDER_DISCONNECTED) {
       castContext.addEventListener(SystemEventType.SENDER_DISCONNECTED, () => {
-        console.log("Sender disconnected");
         setSenderConnected(false);
 
         // Log debug message
@@ -162,15 +192,31 @@ export async function initializeCastReceiver() {
         });
       });
     } else {
-      console.warn("SENDER_DISCONNECTED event type not available");
+      PlayerController._impl?.addDebugMessage?.({
+        type: "EVENT_TYPE_WARNING",
+        data: { missing: "SENDER_DISCONNECTED" },
+        source: "CAST_SERVICE",
+      });
     }
 
-    console.log("Cast receiver initialized successfully with quality optimizations");
+    PlayerController._impl?.addDebugMessage?.({
+      type: "CAST_RECEIVER_INITIALIZED",
+      data: { 
+        success: true,
+        hasQualityOptimizations: true,
+        timestamp: new Date().toISOString()
+      },
+      source: "CAST_SERVICE",
+    });
 
     // PlayerController.use(customAdapter); // swap adapter here if needed
   } catch (error) {
-    console.error("Error initializing Cast receiver:", error);
     setCastReady(false);
+    PlayerController._impl?.addDebugError?.({
+      message: "Error initializing Cast receiver",
+      data: error,
+      source: "CAST_SERVICE",
+    });
     throw error;
   }
 }
