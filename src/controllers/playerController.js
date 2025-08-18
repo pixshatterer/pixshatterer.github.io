@@ -10,7 +10,106 @@ export const PlayerController = {
   initialize(context) {
     castContext = context;
     this.setupReactivePlayerControl();
-    console.log("✅ PlayerController initialized with reactive control");
+    this.setupPlayerEventListeners();
+    console.log("✅ PlayerController initialized with reactive control and event listeners");
+  },
+
+  // Set up player event listeners
+  setupPlayerEventListeners() {
+    if (!castContext) return;
+
+    const playerManager = castContext.getPlayerManager();
+    if (!playerManager) return;
+
+    const EventType = cast.framework.events.EventType;
+
+    console.log("Setting up player event listeners:", {
+      PLAYER_STATE_CHANGED: !!EventType.PLAYER_STATE_CHANGED,
+      TIME_UPDATE: !!EventType.TIME_UPDATE,
+      ERROR: !!EventType.ERROR,
+    });
+
+    // Player state changes
+    if (EventType.PLAYER_STATE_CHANGED) {
+      playerManager.addEventListener(EventType.PLAYER_STATE_CHANGED, (event) => {
+        console.log("Player state changed:", event.playerState);
+
+        this._impl?.addDebugMessage?.({
+          type: "PLAYER_STATE_CHANGED",
+          data: { playerState: event.playerState },
+          source: "CAF_EVENT",
+        });
+
+        if (event.playerState === cast.framework.messages.PlayerState.PLAYING) {
+          this.updatePlayback({ isPlaying: true });
+        } else if (event.playerState === cast.framework.messages.PlayerState.PAUSED) {
+          this.updatePlayback({ isPlaying: false });
+        }
+      });
+    }
+
+    // Time updates
+    if (EventType.TIME_UPDATE) {
+      playerManager.addEventListener(EventType.TIME_UPDATE, (event) => {
+        this.updatePlayback({
+          currentTime: event.currentMediaTime || 0,
+        });
+      });
+    }
+
+    // Error handling with 905 error analysis
+    if (EventType.ERROR) {
+      playerManager.addEventListener(EventType.ERROR, (event) => {
+        console.error("Player error:", event);
+        
+        const errorDetails = {
+          errorCode: event.error,
+          detailedErrorCode: event.detailedErrorCode,
+          reason: event.reason,
+          mediaSessionId: event.mediaSessionId,
+          source: "CAF_ERROR"
+        };
+
+        // Specific handling for 905 (LOAD_FAILED) errors
+        if (event.error === 905 || event.detailedErrorCode === 905) {
+          errorDetails.analysis = "LOAD_FAILED (905): Media failed to load";
+          errorDetails.possibleCauses = [
+            "Invalid or unreachable URL",
+            "CORS configuration issues", 
+            "DRM license server problems",
+            "Unsupported media format/codec",
+            "Network connectivity issues"
+          ];
+          
+          const mediaSession = playerManager.getMediaSession();
+          if (mediaSession?.media) {
+            errorDetails.mediaInfo = {
+              contentId: mediaSession.media.contentId,
+              contentType: mediaSession.media.contentType,
+              streamType: mediaSession.media.streamType,
+              hasDRM: !!mediaSession.media.customData?.drm
+            };
+          }
+        }
+
+        this._impl?.addDebugError?.({
+          message: `Player error ${event.error}: ${event.detailedErrorCode || 'Unknown'}`,
+          data: errorDetails,
+          source: "CAF_ERROR",
+        });
+      });
+    }
+
+    // Other player events
+    if (EventType.BREAK_ENDED) {
+      playerManager.addEventListener(EventType.BREAK_ENDED, (event) => {
+        this._impl?.addDebugMessage?.({
+          type: "BREAK_ENDED",
+          data: event,
+          source: "CAF_EVENT",
+        });
+      });
+    }
   },
 
   // Set up reactive effect to control Cast player based on store changes
