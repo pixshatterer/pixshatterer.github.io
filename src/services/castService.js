@@ -7,7 +7,7 @@ export const [senderConnected, setSenderConnected] = createSignal(false);
 let castContext = null;
 
 function handleLoadStream(streamData) {
-  console.log("Loading stream:", streamData);
+  console.log("Received load stream request:", streamData);
 
   try {
     // Enhanced validation and debugging
@@ -22,9 +22,14 @@ function handleLoadStream(streamData) {
       throw new Error(`Invalid URL format: ${streamData.url}`);
     }
 
+    // Validate DRM requirements
+    if (streamData.drm?.licenseUrl && !streamData.drm.licenseUrl.trim()) {
+      throw new Error("DRM license URL is required but empty");
+    }
+
     // Log debug message with validation details
     PlayerController._impl?.addDebugMessage?.({
-      type: "LOAD_STREAM",
+      type: "CAST_MESSAGE_RECEIVED",
       data: {
         ...streamData,
         validation: {
@@ -38,11 +43,7 @@ function handleLoadStream(streamData) {
       source: "castService",
     });
 
-    // Validate DRM requirements
-    if (streamData.drm?.licenseUrl && !streamData.drm.licenseUrl.trim()) {
-      throw new Error("DRM license URL is required but empty");
-    }
-
+    // Let PlayerController handle the actual loading reactively
     PlayerController.loadStream({
       url: streamData.url || "",
       title: streamData.title || "",
@@ -51,125 +52,10 @@ function handleLoadStream(streamData) {
       drm: streamData.drm || null,
     });
 
-    const playerManager = castContext?.getPlayerManager();
-    if (playerManager && streamData.url) {
-      const mediaInfo = new cast.framework.messages.MediaInformation();
-      mediaInfo.contentId = streamData.url;
-      mediaInfo.contentType = streamData.contentType || "application/dash+xml";
-      mediaInfo.streamType = streamData.isLive
-        ? cast.framework.messages.StreamType.LIVE
-        : cast.framework.messages.StreamType.BUFFERED;
+    console.log("✅ Stream data passed to PlayerController for reactive loading");
 
-      // Configure DRM if provided
-      if (streamData.drm?.licenseUrl) {
-        console.log(
-          "Configuring DRM with license URL:",
-          streamData.drm.licenseUrl
-        );
-
-        // Set up DRM configuration for Cast framework
-        const drmConfig = {};
-
-        // Configure Widevine (most common for Cast)
-        if (
-          streamData.drm.keySystem === "com.widevine.alpha" ||
-          !streamData.drm.keySystem
-        ) {
-          drmConfig.widevine = {
-            licenseUrl: streamData.drm.licenseUrl,
-            headers: streamData.drm.headers || {},
-          };
-        }
-
-        // Configure PlayReady if specified
-        if (streamData.drm.keySystem === "com.microsoft.playready") {
-          drmConfig.playready = {
-            licenseUrl: streamData.drm.licenseUrl,
-            headers: streamData.drm.headers || {},
-          };
-        }
-
-        // Apply DRM configuration to media info
-        if (Object.keys(drmConfig).length > 0) {
-          mediaInfo.customData = {
-            ...mediaInfo.customData,
-            drm: drmConfig,
-          };
-        }
-      }
-
-      if (streamData.title) {
-        mediaInfo.metadata = new cast.framework.messages.GenericMediaMetadata();
-        mediaInfo.metadata.title = streamData.title;
-      }
-
-      const request = new cast.framework.messages.LoadRequestData();
-      request.media = mediaInfo;
-      request.autoplay = streamData.autoplay !== false;
-
-      // Quality optimization settings
-      request.customData = {
-        ...request.customData,
-        // Prefer higher quality renditions
-        preferredBitrate: streamData.preferredBitrate || 8000000, // 8 Mbps default
-        maxBitrate: streamData.maxBitrate || 25000000, // 25 Mbps max
-        minBitrate: streamData.minBitrate || 1000000, // 1 Mbps min
-      };
-
-      // Debug: Log the exact media configuration before loading
-      console.log("About to load media with configuration:", {
-        contentId: mediaInfo.contentId,
-        contentType: mediaInfo.contentType,
-        streamType: mediaInfo.streamType,
-        metadata: mediaInfo.metadata,
-        customData: mediaInfo.customData,
-        autoplay: request.autoplay,
-        qualitySettings: request.customData
-      });
-
-      PlayerController._impl?.addDebugMessage?.({
-        type: "MEDIA_CONFIG_DEBUG",
-        data: {
-          mediaInfo: {
-            contentId: mediaInfo.contentId,
-            contentType: mediaInfo.contentType,
-            streamType: mediaInfo.streamType,
-            hasDRM: !!mediaInfo.customData?.drm,
-            hasMetadata: !!mediaInfo.metadata
-          },
-          requestConfig: {
-            autoplay: request.autoplay
-          }
-        },
-        source: "castService",
-      });
-
-      playerManager.load(request);
-      console.log(
-        "Media loaded successfully",
-        streamData.drm ? "with DRM" : "without DRM"
-      );
-
-      // Log success message
-      PlayerController._impl?.addDebugMessage?.({
-        type: "MEDIA_LOADED",
-        data: {
-          url: streamData.url,
-          title: streamData.title,
-          hasDRM: !!streamData.drm,
-        },
-        source: "castService",
-      });
-    } else {
-      const errorMsg = "Player manager not available or no URL provided";
-      console.warn(errorMsg);
-      PlayerController._impl?.addDebugError?.({
-        message: errorMsg,
-        data: { hasPlayerManager: !!playerManager, hasUrl: !!streamData.url },
-      });
-    }
   } catch (error) {
-    console.error("Error loading stream:", error);
+    console.error("❌ Error in handleLoadStream:", error);
     PlayerController._impl?.addDebugError?.(error);
     throw error;
   }
@@ -295,6 +181,9 @@ export async function initializeCastReceiver() {
         }
       );
     }
+
+    // Initialize PlayerController with reactive control
+    PlayerController.initialize(castContext);
 
     // Verify event types exist before using them
     const EventType = cast.framework.events.EventType;
