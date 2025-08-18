@@ -6,61 +6,6 @@ export const [senderConnected, setSenderConnected] = createSignal(false);
 
 let castContext = null;
 
-function handleLoadStream(streamData) {
-  console.log("Received load stream request:", streamData);
-
-  try {
-    // Enhanced validation and debugging
-    if (!streamData?.url) {
-      throw new Error("Stream URL is required");
-    }
-
-    // URL validation
-    try {
-      new URL(streamData.url);
-    } catch {
-      throw new Error(`Invalid URL format: ${streamData.url}`);
-    }
-
-    // Validate DRM requirements
-    if (streamData.drm?.licenseUrl && !streamData.drm.licenseUrl.trim()) {
-      throw new Error("DRM license URL is required but empty");
-    }
-
-    // Log debug message with validation details
-    PlayerController._impl?.addDebugMessage?.({
-      type: "CAST_MESSAGE_RECEIVED",
-      data: {
-        ...streamData,
-        validation: {
-          hasUrl: !!streamData.url,
-          urlValid: true,
-          hasDRM: !!streamData.drm?.licenseUrl,
-          contentType: streamData.contentType || "application/dash+xml",
-          isLive: streamData.isLive || false
-        }
-      },
-      source: "castService",
-    });
-
-    // Let PlayerController handle the actual loading reactively
-    PlayerController.loadStream({
-      url: streamData.url || "",
-      title: streamData.title || "",
-      contentType: streamData.contentType || "application/dash+xml",
-      isLive: streamData.isLive || false,
-      drm: streamData.drm || null,
-    });
-
-    console.log("✅ Stream data passed to PlayerController for reactive loading");
-
-  } catch (error) {
-    console.error("❌ Error in handleLoadStream:", error);
-    PlayerController._impl?.addDebugError?.(error);
-    throw error;
-  }
-}
-
 function waitForCastFramework() {
   return new Promise((resolve, reject) => {
     if (
@@ -144,8 +89,64 @@ export async function initializeCastReceiver() {
     receiverOptions.playbackConfig.autoResumeDuration = 5;
     receiverOptions.playbackConfig.autoPauseDuration = null;
     
+    // Add custom message listener BEFORE starting (required)
+    castContext.addCustomMessageListener(
+      "urn:x-cast:com.ditu.control",
+      (event) => {
+        console.log("Received custom message:", event);
+
+        // Log debug message
+        PlayerController._impl?.addDebugMessage?.({
+          type: "CUSTOM_MESSAGE",
+          data: event.data,
+          source: "CAST_SENDER",
+        });
+
+        // Simply pass message data to PlayerController - let it handle everything
+        const type = event.data?.type;
+        if (type === "LOAD_STREAM" && event.data?.streamData) {
+          try {
+            // Validate and pass to PlayerController - no duplication
+            const streamData = event.data.streamData;
+            
+            // Basic validation only
+            if (!streamData?.url) {
+              throw new Error("Stream URL is required");
+            }
+
+            // Let PlayerController handle all the logic reactively
+            PlayerController.loadStream({
+              url: streamData.url || "",
+              title: streamData.title || "",
+              contentType: streamData.contentType || "application/dash+xml",
+              isLive: streamData.isLive || false,
+              drm: streamData.drm || null,
+            });
+
+            console.log("✅ Stream data passed to PlayerController");
+          } catch (error) {
+            console.error("❌ Error processing Cast message:", error);
+            PlayerController._impl?.addDebugError?.(error);
+          }
+        }
+      }
+    );
+
     // Apply receiver options
-    castContext.start(receiverOptions);
+    try {
+      castContext.start(receiverOptions);
+      console.log("✅ Cast context started with custom options");
+    } catch (error) {
+      if (error.message?.includes("already provided") || error.message?.includes("already started")) {
+        console.log("⚠️ Cast context already started, using default options");
+        // If already started, just get the existing context
+        if (!castContext.isReady) {
+          castContext.start();
+        }
+      } else {
+        throw error;
+      }
+    }
 
     // Add load interceptor for quality optimization
     if (playerManager.setMessageInterceptor) {
@@ -289,26 +290,6 @@ export async function initializeCastReceiver() {
         });
       });
     }
-
-    // Add custom message listener
-    castContext.addCustomMessageListener(
-      "urn:x-cast:com.ditu.control",
-      (event) => {
-        console.log("Received custom message:", event);
-
-        // Log debug message
-        PlayerController._impl?.addDebugMessage?.({
-          type: "CUSTOM_MESSAGE",
-          data: event.data,
-          source: "CAST_SENDER",
-        });
-
-        const type = event.data?.type;
-        if (type === "LOAD_STREAM") {
-          handleLoadStream(event.data.streamData);
-        }
-      }
-    );
 
     // Set initial state
     setCastReady(true);
