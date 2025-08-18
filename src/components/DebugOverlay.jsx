@@ -38,7 +38,7 @@ export default function DebugOverlay() {
           )}
 
           <div class="debug-list">
-            <For each={videoStore.debug.messages.slice(0, 10)} fallback={
+            <For each={videoStore.debug.messages.slice(0, 5)} fallback={
               <div class="debug-empty">Waiting for Cast messages...</div>
             }>
               {(message) => (
