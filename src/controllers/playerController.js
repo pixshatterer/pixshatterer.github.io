@@ -210,9 +210,23 @@ export const PlayerController = {
           const mediaInfo = new cast.framework.messages.MediaInformation();
           mediaInfo.contentId = url;
           mediaInfo.contentType = contentType || "application/dash+xml";
+          
+          // Debug the isLive value and stream type assignment
+          console.log("🔍 Stream type debug:", {
+            isLiveValue: isLive,
+            isLiveType: typeof isLive,
+            willSetToLive: !!isLive,
+            streamTypeConstants: {
+              LIVE: cast.framework.messages.StreamType.LIVE,
+              BUFFERED: cast.framework.messages.StreamType.BUFFERED
+            }
+          });
+          
           mediaInfo.streamType = isLive 
             ? cast.framework.messages.StreamType.LIVE 
             : cast.framework.messages.StreamType.BUFFERED;
+            
+          console.log("✅ Set streamType to:", mediaInfo.streamType, isLive ? "(LIVE)" : "(BUFFERED)");
 
           // Add DRM configuration if enabled
           if (drm.enabled && drm.licenseUrl) {
@@ -267,6 +281,8 @@ export const PlayerController = {
               title,
               contentType,
               isLive,
+              streamType: mediaInfo.streamType,
+              streamTypeText: isLive ? "LIVE" : "BUFFERED",
               hasDRM: drm.enabled
             },
             source: "PLAYER_CONTROLLER",
