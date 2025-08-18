@@ -86,6 +86,7 @@ npm run preview
 The receiver listens for custom messages on the namespace `urn:x-cast:com.ditu.control`:
 
 #### Load Stream Message
+
 ```javascript
 {
   type: "LOAD_STREAM",
