@@ -1,27 +1,95 @@
-#root {
-  max-width: 1280px;
+.app-container {
+  padding: 16px;
+  max-width: 800px;
   margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.solid:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.app-title {
+  font-size: 18px;
+  margin-bottom: 20px;
+  color: #fff;
 }
 
-.card {
-  padding: 2em;
+/* Error display */
+.error-message {
+  color: #ff6b6b;
+  margin-bottom: 16px;
+  padding: 8px;
+  border: 1px solid #ff6b6b;
+  border-radius: 4px;
+  background-color: rgba(255, 107, 107, 0.1);
 }
 
-.read-the-docs {
-  color: #888;
+/* Status indicators */
+.status-section {
+  margin-bottom: 16px;
+}
+
+.status-item {
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.status-ready {
+  color: #51cf66;
+}
+
+.status-pending {
+  color: #ffd43b;
+}
+
+.status-connected {
+  color: #51cf66;
+}
+
+.status-disconnected {
+  color: #868e96;
+}
+
+/* Video info display */
+.video-info {
+  margin-bottom: 16px;
+}
+
+.video-info-item {
+  margin-bottom: 8px;
+  padding: 4px 0;
+}
+
+.video-info-label {
+  font-weight: bold;
+  margin-right: 8px;
+}
+
+.video-info-value {
+  color: #adb5bd;
+}
+
+/* Developer info panel */
+.developer-info {
+  margin-top: 20px;
+  padding: 12px;
+  background: #333;
+  border-radius: 4px;
+  font-size: 12px;
+  border-left: 4px solid #339af0;
+}
+
+.developer-info-title {
+  margin-bottom: 8px;
+  font-weight: bold;
+  color: #339af0;
+}
+
+.developer-info-item {
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+
+.developer-info code {
+  background: #212529;
+  padding: 2px 4px;
+  border-radius: 2px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  color: #51cf66;
 }

@@ -1,5 +1,6 @@
 import { onMount, createSignal } from "solid-js";
 import "./App.css";
+import "./styles/cast-receiver.css";
 import { videoStore } from "./stores/videoStore";
 import { initializeCastReceiver, castReady, senderConnected } from "./services/castService";
 import { testUtils } from "./utils/testUtils";
@@ -21,36 +22,48 @@ export default function App() {
   });
 
   return (
-    <div style="padding:16px">
-      <h1 style="font-size:18px">Custom Receiver · Solid</h1>
+    <div class="app-container">
+      <h1 class="app-title">Custom Receiver · Solid</h1>
       
       {error() && (
-        <div style="color: red; margin-bottom: 16px; padding: 8px; border: 1px solid red; border-radius: 4px;">
+        <div class="error-message">
           <strong>Error:</strong> {error()}
         </div>
       )}
       
-      <div style="margin-bottom: 16px;">
-        <div style={`color: ${castReady() ? 'green' : 'orange'}`}>
+      <div class="status-section">
+        <div class={`status-item ${castReady() ? 'status-ready' : 'status-pending'}`}>
           Cast Ready: {castReady() ? "✓" : "⏳"}
         </div>
-        <div style={`color: ${senderConnected() ? 'green' : 'gray'}`}>
+        <div class={`status-item ${senderConnected() ? 'status-connected' : 'status-disconnected'}`}>
           Sender Connected: {senderConnected() ? "✓" : "✗"}
         </div>
       </div>
       
-      <div style="margin-bottom: 16px;">
-        <div><b>Title:</b> {videoStore.title || "N/A"}</div>
-        <div><b>URL:</b> {videoStore.url || "N/A"}</div>
-        <div><b>Playing:</b> {videoStore.isPlaying ? "Yes" : "No"}</div>
-        <div><b>Current Time:</b> {videoStore.currentTime.toFixed(2)}s</div>
+      <div class="video-info">
+        <div class="video-info-item">
+          <span class="video-info-label">Title:</span>
+          <span class="video-info-value">{videoStore.title || "N/A"}</span>
+        </div>
+        <div class="video-info-item">
+          <span class="video-info-label">URL:</span>
+          <span class="video-info-value">{videoStore.url || "N/A"}</span>
+        </div>
+        <div class="video-info-item">
+          <span class="video-info-label">Playing:</span>
+          <span class="video-info-value">{videoStore.isPlaying ? "Yes" : "No"}</span>
+        </div>
+        <div class="video-info-item">
+          <span class="video-info-label">Current Time:</span>
+          <span class="video-info-value">{videoStore.currentTime.toFixed(2)}s</span>
+        </div>
       </div>
 
-      <div style="margin-top: 20px; padding: 12px; background: #333; border-radius: 4px; font-size: 12px;">
-        <div style="margin-bottom: 8px;"><strong>Developer Info:</strong></div>
-        <div>• Open browser console to see detailed logs</div>
-        <div>• Use <code>window.testUtils.logCastState()</code> to check Cast state</div>
-        <div>• Use <code>window.testUtils.simulateLoadStream()</code> to test loading</div>
+      <div class="developer-info">
+        <div class="developer-info-title">Developer Info:</div>
+        <div class="developer-info-item">• Open browser console to see detailed logs</div>
+        <div class="developer-info-item">• Use <code>window.testUtils.logCastState()</code> to check Cast state</div>
+        <div class="developer-info-item">• Use <code>window.testUtils.simulateLoadStream()</code> to test loading</div>
       </div>
     </div>
   );

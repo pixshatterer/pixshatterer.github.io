@@ -1,0 +1,106 @@
+/* Cast Receiver Specific Styles */
+
+/* Status indicators with animations */
+.status-ready {
+  color: #51cf66;
+  animation: pulse-green 2s infinite;
+}
+
+.status-pending {
+  color: #ffd43b;
+  animation: pulse-yellow 1.5s infinite;
+}
+
+.status-connected {
+  color: #51cf66;
+}
+
+.status-disconnected {
+  color: #868e96;
+}
+
+/* Animations */
+@keyframes pulse-green {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes pulse-yellow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Video info grid layout for larger screens */
+@media (min-width: 768px) {
+  .video-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+}
+
+/* Loading states */
+.loading {
+  position: relative;
+}
+
+.loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 2px solid #333;
+  border-top: 2px solid #51cf66;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Error states */
+.error-message {
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* Cast receiver responsive design */
+@media (max-width: 480px) {
+  .app-container {
+    padding: 12px;
+  }
+  
+  .app-title {
+    font-size: 16px;
+  }
+  
+  .developer-info {
+    font-size: 11px;
+  }
+}
+
+/* High contrast mode for accessibility */
+@media (prefers-contrast: high) {
+  .status-ready {
+    color: #00ff00;
+  }
+  
+  .status-pending {
+    color: #ffff00;
+  }
+  
+  .error-message {
+    border-color: #ff0000;
+    color: #ff0000;
+  }
+}
