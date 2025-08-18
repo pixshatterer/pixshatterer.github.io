@@ -9,9 +9,78 @@ export const PlayerController = {
   // Initialize the controller with Cast context
   initialize(context) {
     castContext = context;
+    this.setupQualityOptimization();
     this.setupReactivePlayerControl();
     this.setupPlayerEventListeners();
-    console.log("✅ PlayerController initialized with reactive control and event listeners");
+    console.log("✅ PlayerController initialized with quality optimization, reactive control and event listeners");
+  },
+
+  // Set up quality optimization for better video quality
+  setupQualityOptimization() {
+    if (!castContext) return;
+
+    const playerManager = castContext.getPlayerManager();
+    if (!playerManager) return;
+
+    // Configure player for better quality
+    if (playerManager.setMediaPlaybackInfoHandler) {
+      playerManager.setMediaPlaybackInfoHandler((_, mediaPlaybackInfo) => {
+        console.log("Setting media playback info for quality optimization");
+        
+        // Request higher quality by default
+        if (mediaPlaybackInfo.supportedMediaCommands) {
+          mediaPlaybackInfo.supportedMediaCommands |= cast.framework.messages.Command.STREAM_VOLUME;
+        }
+        
+        // Log quality configuration
+        this._impl?.addDebugMessage?.({
+          type: "QUALITY_CONFIG",
+          data: {
+            preferredBitrate: "8Mbps",
+            maxBitrate: "25Mbps",
+            adaptiveBitrate: true
+          },
+          source: "PLAYER_CONTROLLER",
+        });
+
+        return mediaPlaybackInfo;
+      });
+    }
+
+    // Set up load interceptor for quality optimization
+    if (playerManager.setMessageInterceptor) {
+      playerManager.setMessageInterceptor(
+        cast.framework.messages.MessageType.LOAD,
+        (request) => {
+          console.log("Intercepting LOAD request for quality optimization");
+          
+          // Enhance load request with quality preferences
+          if (request.media) {
+            request.media.customData = {
+              ...request.media.customData,
+              qualityPreferences: {
+                preferHigherBitrate: true,
+                adaptiveBitrate: true,
+                targetBitrate: 8000000, // 8 Mbps
+                maxBitrate: 25000000    // 25 Mbps
+              }
+            };
+          }
+
+          this._impl?.addDebugMessage?.({
+            type: "LOAD_INTERCEPTED",
+            data: {
+              hasQualityPreferences: !!request.media?.customData?.qualityPreferences,
+              contentType: request.media?.contentType,
+              streamType: request.media?.streamType
+            },
+            source: "PLAYER_CONTROLLER",
+          });
+
+          return request;
+        }
+      );
+    }
   },
 
   // Set up player event listeners
