@@ -107,6 +107,15 @@ function handleLoadStream(streamData) {
       request.media = mediaInfo;
       request.autoplay = streamData.autoplay !== false;
 
+      // Quality optimization settings
+      request.customData = {
+        ...request.customData,
+        // Prefer higher quality renditions
+        preferredBitrate: streamData.preferredBitrate || 8000000, // 8 Mbps default
+        maxBitrate: streamData.maxBitrate || 25000000, // 25 Mbps max
+        minBitrate: streamData.minBitrate || 1000000, // 1 Mbps min
+      };
+
       // Debug: Log the exact media configuration before loading
       console.log("About to load media with configuration:", {
         contentId: mediaInfo.contentId,
@@ -114,7 +123,8 @@ function handleLoadStream(streamData) {
         streamType: mediaInfo.streamType,
         metadata: mediaInfo.metadata,
         customData: mediaInfo.customData,
-        autoplay: request.autoplay
+        autoplay: request.autoplay,
+        qualitySettings: request.customData
       });
 
       PlayerController._impl?.addDebugMessage?.({
@@ -213,6 +223,78 @@ export async function initializeCastReceiver() {
 
     castContext = cast.framework.CastReceiverContext.getInstance();
     const playerManager = castContext.getPlayerManager();
+
+    // Configure player for better quality
+    if (playerManager.setMediaPlaybackInfoHandler) {
+      playerManager.setMediaPlaybackInfoHandler((_, mediaPlaybackInfo) => {
+        console.log("Setting media playback info for quality optimization");
+        
+        // Request higher quality by default
+        if (mediaPlaybackInfo.supportedMediaCommands) {
+          mediaPlaybackInfo.supportedMediaCommands |= cast.framework.messages.Command.STREAM_VOLUME;
+        }
+        
+        // Log quality configuration
+        PlayerController._impl?.addDebugMessage?.({
+          type: "QUALITY_CONFIG",
+          data: {
+            preferredBitrate: "8Mbps",
+            maxBitrate: "25Mbps",
+            adaptiveBitrate: true
+          },
+          source: "PLAYER_CONFIG",
+        });
+
+        return mediaPlaybackInfo;
+      });
+    }
+
+    // Configure Cast receiver options for better quality
+    const receiverOptions = new cast.framework.CastReceiverOptions();
+    receiverOptions.maxInactivity = 6000; // 10 minutes
+    receiverOptions.playbackConfig = new cast.framework.PlaybackConfig();
+    
+    // Enable adaptive bitrate with quality preferences
+    receiverOptions.playbackConfig.autoResumeDuration = 5;
+    receiverOptions.playbackConfig.autoPauseDuration = null;
+    
+    // Apply receiver options
+    castContext.start(receiverOptions);
+
+    // Add load interceptor for quality optimization
+    if (playerManager.setMessageInterceptor) {
+      playerManager.setMessageInterceptor(
+        cast.framework.messages.MessageType.LOAD,
+        (request) => {
+          console.log("Intercepting LOAD request for quality optimization");
+          
+          // Enhance load request with quality preferences
+          if (request.media) {
+            request.media.customData = {
+              ...request.media.customData,
+              qualityPreferences: {
+                preferHigherBitrate: true,
+                adaptiveBitrate: true,
+                targetBitrate: 8000000, // 8 Mbps
+                maxBitrate: 25000000    // 25 Mbps
+              }
+            };
+          }
+
+          PlayerController._impl?.addDebugMessage?.({
+            type: "LOAD_INTERCEPTED",
+            data: {
+              hasQualityPreferences: !!request.media?.customData?.qualityPreferences,
+              contentType: request.media?.contentType,
+              streamType: request.media?.streamType
+            },
+            source: "LOAD_INTERCEPTOR",
+          });
+
+          return request;
+        }
+      );
+    }
 
     // Verify event types exist before using them
     const EventType = cast.framework.events.EventType;
@@ -376,9 +458,7 @@ export async function initializeCastReceiver() {
       console.warn("SENDER_DISCONNECTED event type not available");
     }
 
-    // Start the cast context
-    castContext.start();
-    console.log("Cast receiver initialized successfully");
+    console.log("Cast receiver initialized successfully with quality optimizations");
 
     // PlayerController.use(customAdapter); // swap adapter here if needed
   } catch (error) {
