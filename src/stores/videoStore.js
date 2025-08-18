@@ -4,6 +4,7 @@ export const [videoStore, setVideoStore] = createStore({
   url: "",
   title: "",
   contentType: "",
+  isLive: false,
   isPlaying: false,
   currentTime: 0,
   // DRM configuration
@@ -25,7 +26,7 @@ export const [videoStore, setVideoStore] = createStore({
 });
 
 export const videoActions = {
-  loadStream({ url, title, contentType, drm }) {
+  loadStream({ url, title, contentType, isLive, drm }) {
     const drmConfig = drm ? {
       licenseUrl: drm.licenseUrl || "",
       keySystem: drm.keySystem || "com.widevine.alpha",
@@ -42,6 +43,7 @@ export const videoActions = {
       url, 
       title, 
       contentType,
+      isLive,
       drm: drmConfig
     });
   },
@@ -75,7 +77,7 @@ export const videoActions = {
     const timestamp = new Date().toLocaleTimeString();
     const messageWithTime = { ...message, timestamp };
     
-    setVideoStore('debug', 'messages', prev => [messageWithTime, ...prev].slice(0, 10)); // Keep last 10
+    setVideoStore('debug', 'messages', prev => [messageWithTime, ...prev].slice(0, 5)); // Keep last 5
     setVideoStore('debug', 'lastMessage', messageWithTime);
     setVideoStore('debug', 'messageCount', prev => prev + 1);
   },
@@ -87,7 +89,7 @@ export const videoActions = {
       timestamp 
     };
     
-    setVideoStore('debug', 'errors', prev => [errorWithTime, ...prev].slice(0, 10)); // Keep last 10
+    setVideoStore('debug', 'errors', prev => [errorWithTime, ...prev].slice(0, 5)); // Keep last 5
     setVideoStore('debug', 'lastError', errorWithTime);
     setVideoStore('debug', 'errorCount', prev => prev + 1);
   },
