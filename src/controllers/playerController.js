@@ -122,8 +122,7 @@ export const PlayerController = {
         PLAYER_STATE_CHANGED: !!EventType.PLAYER_STATE_CHANGED,
         TIME_UPDATE: !!EventType.TIME_UPDATE,
         ERROR: !!EventType.ERROR,
-        MEDIA_STATUS: !!EventType.MEDIA_STATUS,
-        MEDIA_INFORMATION_CHANGED: !!EventType.MEDIA_INFORMATION_CHANGED
+        BREAK_ENDED: !!EventType.BREAK_ENDED
       },
       source: "EVENT_SETUP",
     });
@@ -141,21 +140,21 @@ export const PlayerController = {
         if (event.playerState === cast.framework.messages.PlayerState.PLAYING) {
           this.updatePlayback({ isPlaying: true });
           
-          // Capture actual media session information
+          // Capture actual media session information only if it exists
           const mediaSession = playerManager.getMediaSession();
-          if (mediaSession) {
+          if (mediaSession && mediaSession.media) {
             this._impl?.addDebugMessage?.({
               type: "MEDIA_SESSION_INFO",
               data: {
-                contentId: mediaSession.media?.contentId,
-                contentType: mediaSession.media?.contentType,
-                streamType: mediaSession.media?.streamType,
-                duration: mediaSession.media?.duration,
-                title: mediaSession.media?.metadata?.title,
-                subtitle: mediaSession.media?.metadata?.subtitle,
-                hasMetadata: !!mediaSession.media?.metadata,
-                metadataType: mediaSession.media?.metadata?.metadataType,
-                customData: mediaSession.media?.customData,
+                contentId: mediaSession.media.contentId,
+                contentType: mediaSession.media.contentType,
+                streamType: mediaSession.media.streamType,
+                duration: mediaSession.media.duration,
+                title: mediaSession.media.metadata?.title,
+                subtitle: mediaSession.media.metadata?.subtitle,
+                hasMetadata: !!mediaSession.media.metadata,
+                metadataType: mediaSession.media.metadata?.metadataType,
+                customData: mediaSession.media.customData,
                 sessionId: mediaSession.sessionId,
                 mediaSessionId: mediaSession.mediaSessionId
               },
@@ -225,51 +224,6 @@ export const PlayerController = {
           type: "BREAK_ENDED",
           data: event,
           source: "CAF_EVENT",
-        });
-      });
-    }
-
-    // Media loaded event to capture actual loaded media information
-    if (EventType.MEDIA_STATUS) {
-      playerManager.addEventListener(EventType.MEDIA_STATUS, (event) => {
-        this._impl?.addDebugMessage?.({
-          type: "MEDIA_STATUS",
-          data: {
-            playerState: event.playerState,
-            currentTime: event.currentTime,
-            duration: event.duration,
-            playbackRate: event.playbackRate,
-            volume: event.volume?.level,
-            muted: event.volume?.muted,
-            mediaSessionId: event.mediaSessionId,
-            mediaInfo: event.mediaInformation ? {
-              contentId: event.mediaInformation.contentId,
-              contentType: event.mediaInformation.contentType,
-              streamType: event.mediaInformation.streamType,
-              duration: event.mediaInformation.duration,
-              hasMetadata: !!event.mediaInformation.metadata,
-              title: event.mediaInformation.metadata?.title
-            } : null
-          },
-          source: "MEDIA_STATUS",
-        });
-      });
-    }
-
-    // Media information changed event
-    if (EventType.MEDIA_INFORMATION_CHANGED) {
-      playerManager.addEventListener(EventType.MEDIA_INFORMATION_CHANGED, (event) => {
-        this._impl?.addDebugMessage?.({
-          type: "MEDIA_INFO_CHANGED",
-          data: {
-            contentId: event.mediaInformation?.contentId,
-            contentType: event.mediaInformation?.contentType,
-            streamType: event.mediaInformation?.streamType,
-            duration: event.mediaInformation?.duration,
-            title: event.mediaInformation?.metadata?.title,
-            hasMetadata: !!event.mediaInformation?.metadata
-          },
-          source: "MEDIA_INFO_CHANGED",
         });
       });
     }
