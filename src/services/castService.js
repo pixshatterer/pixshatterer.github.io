@@ -10,10 +10,16 @@ function handleLoadStream(streamData) {
   console.log("Loading stream:", streamData);
   
   try {
+    // Validate DRM requirements
+    if (streamData.drm?.licenseUrl && !streamData.drm.licenseUrl.trim()) {
+      throw new Error("DRM license URL is required but empty");
+    }
+
     PlayerController.loadStream({
       url: streamData.url || "",
       title: streamData.title || "",
       contentType: streamData.contentType || "application/dash+xml",
+      drm: streamData.drm || null,
     });
 
     const playerManager = castContext?.getPlayerManager();
@@ -21,6 +27,38 @@ function handleLoadStream(streamData) {
       const mediaInfo = new cast.framework.messages.MediaInformation();
       mediaInfo.contentId = streamData.url;
       mediaInfo.contentType = streamData.contentType || "application/dash+xml";
+
+      // Configure DRM if provided
+      if (streamData.drm?.licenseUrl) {
+        console.log("Configuring DRM with license URL:", streamData.drm.licenseUrl);
+        
+        // Set up DRM configuration for Cast framework
+        const drmConfig = {};
+        
+        // Configure Widevine (most common for Cast)
+        if (streamData.drm.keySystem === "com.widevine.alpha" || !streamData.drm.keySystem) {
+          drmConfig.widevine = {
+            licenseUrl: streamData.drm.licenseUrl,
+            headers: streamData.drm.headers || {}
+          };
+        }
+        
+        // Configure PlayReady if specified
+        if (streamData.drm.keySystem === "com.microsoft.playready") {
+          drmConfig.playready = {
+            licenseUrl: streamData.drm.licenseUrl,
+            headers: streamData.drm.headers || {}
+          };
+        }
+
+        // Apply DRM configuration to media info
+        if (Object.keys(drmConfig).length > 0) {
+          mediaInfo.customData = {
+            ...mediaInfo.customData,
+            drm: drmConfig
+          };
+        }
+      }
 
       if (streamData.title) {
         mediaInfo.metadata = new cast.framework.messages.GenericMediaMetadata();
@@ -32,12 +70,13 @@ function handleLoadStream(streamData) {
       request.autoplay = streamData.autoplay !== false;
 
       playerManager.load(request);
-      console.log("Media loaded successfully");
+      console.log("Media loaded successfully", streamData.drm ? "with DRM" : "without DRM");
     } else {
       console.warn("Player manager not available or no URL provided");
     }
   } catch (error) {
     console.error("Error loading stream:", error);
+    throw error;
   }
 }
 

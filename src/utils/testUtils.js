@@ -6,6 +6,7 @@ export const testUtils = {
       title: data.title || "Test Video",
       contentType: data.contentType || "video/mp4",
       autoplay: data.autoplay !== false,
+      drm: data.drm || null,
       ...data
     };
 
@@ -25,6 +26,23 @@ export const testUtils = {
     }
     
     return streamData;
+  },
+
+  simulateLoadDRMStream(drmConfig = {}) {
+    const defaultDrmConfig = {
+      licenseUrl: drmConfig.licenseUrl || "https://example.com/drm/license",
+      keySystem: drmConfig.keySystem || "com.widevine.alpha",
+      headers: drmConfig.headers || {
+        "X-Custom-Header": "Bearer token123"
+      }
+    };
+
+    return this.simulateLoadStream({
+      url: drmConfig.url || "https://example.com/protected-content.mpd",
+      title: drmConfig.title || "DRM Protected Video",
+      contentType: drmConfig.contentType || "application/dash+xml",
+      drm: defaultDrmConfig
+    });
   },
 
   logCastState() {

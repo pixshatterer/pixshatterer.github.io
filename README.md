@@ -79,6 +79,129 @@ npm run build
 npm run preview
 ```
 
+## Usage
+
+### Basic Media Streaming
+
+To stream regular (non-DRM) media content to the receiver, send a custom message from your sender application:
+
+```javascript
+// From your Cast sender app
+const castSession = cast.framework.CastContext.getInstance().getCurrentSession();
+
+// Load a basic video stream
+castSession.sendMessage('urn:x-cast:com.ditu.control', {
+  type: "LOAD_STREAM",
+  streamData: {
+    url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+    title: "Big Buck Bunny",
+    contentType: "video/mp4",
+    autoplay: true
+  }
+});
+```
+
+### DRM-Protected Content
+
+For DRM-protected content, include the DRM configuration with a valid license URL:
+
+```javascript
+// Load DRM-protected DASH stream
+castSession.sendMessage('urn:x-cast:com.ditu.control', {
+  type: "LOAD_STREAM",
+  streamData: {
+    url: "https://your-cdn.com/protected-content.mpd",
+    title: "Protected Movie",
+    contentType: "application/dash+xml",
+    autoplay: true,
+    drm: {
+      licenseUrl: "https://your-drm-server.com/license",
+      keySystem: "com.widevine.alpha",
+      headers: {
+        "Authorization": "Bearer your-access-token",
+        "X-Custom-Data": "additional-metadata"
+      }
+    }
+  }
+});
+```
+
+### Supported Content Types
+
+The receiver supports various media formats:
+
+- **MP4 Video**: `video/mp4`
+- **DASH Streams**: `application/dash+xml`
+- **HLS Streams**: `application/vnd.apple.mpegurl`
+- **WebM Video**: `video/webm`
+
+### Development Testing
+
+When developing locally, use the built-in test utilities:
+
+```javascript
+// Test regular content
+window.testUtils.simulateLoadStream({
+  url: "https://example.com/video.mp4",
+  title: "Test Video"
+});
+
+// Test DRM content
+window.testUtils.simulateLoadDRMStream({
+  url: "https://example.com/protected.mpd",
+  title: "DRM Test Video",
+  licenseUrl: "https://drm-server.com/license"
+});
+
+// Check receiver status
+window.testUtils.logCastState();
+```
+
+### Sender App Integration
+
+To integrate this receiver with your Cast sender application:
+
+1. **Register the receiver** at [Google Cast Console](https://cast.google.com/publish/)
+2. **Use the Application ID** in your sender app initialization
+3. **Send custom messages** to the `urn:x-cast:com.ditu.control` namespace
+
+Example sender app code:
+
+```javascript
+// Initialize Cast API
+window['__onGCastApiAvailable'] = function(isAvailable) {
+  if (isAvailable) {
+    cast.framework.CastContext.getInstance().setOptions({
+      receiverApplicationId: 'YOUR_RECEIVER_APP_ID', // From Cast Console
+      autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
+    });
+  }
+};
+
+// Load media with DRM
+function loadProtectedMedia() {
+  const castSession = cast.framework.CastContext.getInstance().getCurrentSession();
+  
+  if (castSession) {
+    castSession.sendMessage('urn:x-cast:com.ditu.control', {
+      type: "LOAD_STREAM",
+      streamData: {
+        url: "https://your-content.mpd",
+        title: "Your Content Title",
+        contentType: "application/dash+xml",
+        drm: {
+          licenseUrl: "https://your-license-server.com/license",
+          keySystem: "com.widevine.alpha",
+          headers: {
+            "Authorization": "Bearer " + getAccessToken()
+          }
+        }
+      }
+    });
+  }
+}
+```
+
 ## Cast Integration
 
 ### Custom Messages
@@ -94,9 +217,49 @@ The receiver listens for custom messages on the namespace `urn:x-cast:com.ditu.c
     url: "https://example.com/video.mp4",
     title: "Video Title",
     contentType: "video/mp4",
-    autoplay: true
+    autoplay: true,
+    // DRM configuration (optional)
+    drm: {
+      licenseUrl: "https://example.com/drm/license",
+      keySystem: "com.widevine.alpha", // or "com.microsoft.playready"
+      headers: {
+        "Authorization": "Bearer token123",
+        "X-Custom-Header": "value"
+      }
+    }
   }
 }
+```
+
+### DRM Support
+
+The receiver supports DRM-protected content with the following key systems:
+
+- **Widevine** (`com.widevine.alpha`) - Default and most widely supported
+- **PlayReady** (`com.microsoft.playready`) - Microsoft's DRM solution
+
+#### DRM Configuration
+
+When loading DRM-protected content, the `drm` object is **required** and must include:
+
+- `licenseUrl` - The URL to the DRM license server (required)
+- `keySystem` - The DRM system identifier (optional, defaults to Widevine)
+- `headers` - Additional headers for license requests (optional)
+
+#### Example DRM Stream
+
+```javascript
+// Load DRM-protected DASH stream
+window.testUtils.simulateLoadDRMStream({
+  url: "https://example.com/protected-content.mpd",
+  title: "Protected Video",
+  contentType: "application/dash+xml",
+  licenseUrl: "https://drm.example.com/license",
+  keySystem: "com.widevine.alpha",
+  headers: {
+    "Authorization": "Bearer your-license-token"
+  }
+})
 ```
 
 ### Event Handling
@@ -116,10 +279,18 @@ The app includes built-in testing utilities accessible via the browser console:
 // Check Cast framework status
 window.testUtils.logCastState()
 
-// Simulate loading a stream
+// Simulate loading a regular stream
 window.testUtils.simulateLoadStream({
   url: "https://example.com/video.mp4",
   title: "Test Video"
+})
+
+// Simulate loading a DRM-protected stream
+window.testUtils.simulateLoadDRMStream({
+  url: "https://example.com/protected.mpd",
+  title: "DRM Protected Video",
+  licenseUrl: "https://drm.example.com/license",
+  keySystem: "com.widevine.alpha"
 })
 ```
 
@@ -152,7 +323,14 @@ The app uses SolidJS stores for reactive state management:
   title: "",         // Media title
   contentType: "",   // MIME type
   isPlaying: false,  // Playback status
-  currentTime: 0     // Current playback time in seconds
+  currentTime: 0,    // Current playback time in seconds
+  // DRM configuration
+  drm: {
+    licenseUrl: "",  // DRM license server URL
+    keySystem: "",   // DRM system (e.g., "com.widevine.alpha")
+    headers: {},     // Additional headers for license requests
+    enabled: false   // Whether DRM is active for current content
+  }
 }
 ```
 

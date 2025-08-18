@@ -57,6 +57,24 @@ export default function App() {
           <span class="video-info-label">Current Time:</span>
           <span class="video-info-value">{videoStore.currentTime.toFixed(2)}s</span>
         </div>
+        <div class="video-info-item">
+          <span class="video-info-label">DRM Protected:</span>
+          <span class={`video-info-value ${videoStore.drm.enabled ? 'drm-enabled' : 'drm-disabled'}`}>
+            {videoStore.drm.enabled ? "Yes" : "No"}
+          </span>
+        </div>
+        {videoStore.drm.enabled && (
+          <>
+            <div class="video-info-item">
+              <span class="video-info-label">Key System:</span>
+              <span class="video-info-value">{videoStore.drm.keySystem || "N/A"}</span>
+            </div>
+            <div class="video-info-item">
+              <span class="video-info-label">License URL:</span>
+              <span class="video-info-value license-url">{videoStore.drm.licenseUrl || "N/A"}</span>
+            </div>
+          </>
+        )}
       </div>
 
       <div class="developer-info">
@@ -64,6 +82,7 @@ export default function App() {
         <div class="developer-info-item">• Open browser console to see detailed logs</div>
         <div class="developer-info-item">• Use <code>window.testUtils.logCastState()</code> to check Cast state</div>
         <div class="developer-info-item">• Use <code>window.testUtils.simulateLoadStream()</code> to test loading</div>
+        <div class="developer-info-item">• Use <code>window.testUtils.simulateLoadDRMStream()</code> to test DRM content</div>
       </div>
     </div>
   );

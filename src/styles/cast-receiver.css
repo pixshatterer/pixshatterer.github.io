@@ -19,6 +19,23 @@
   color: #868e96;
 }
 
+/* DRM status indicators */
+.drm-enabled {
+  color: #ff8787 !important;
+  font-weight: bold;
+}
+
+.drm-disabled {
+  color: #51cf66 !important;
+}
+
+.license-url {
+  font-family: monospace;
+  font-size: 0.9em;
+  word-break: break-all;
+  color: #ffd43b !important;
+}
+
 /* Animations */
 @keyframes pulse-green {
   0%, 100% { opacity: 1; }
