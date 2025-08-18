@@ -15,5 +15,6 @@ export default defineConfig({
     }
   },
   // Set base path for GitHub Pages deployment
-  base: process.env.NODE_ENV === 'production' ? '/cast-receiver/' : '/'
+  // Use relative paths for maximum compatibility
+  base: './'
 });
