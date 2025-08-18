@@ -101,11 +101,17 @@ export async function initializeCastReceiver() {
             });
 
             // Let PlayerController handle all the logic reactively
+            const isLive = streamData.isLive || false;
+            const streamType = isLive 
+              ? cast.framework.messages.StreamType.LIVE 
+              : cast.framework.messages.StreamType.BUFFERED;
+
             PlayerController.loadStream({
               url: streamData.url || "",
               title: streamData.title || "",
               contentType: streamData.contentType || "application/dash+xml",
-              isLive: streamData.isLive || false,
+              isLive: isLive,
+              streamType: streamType,
               drm: streamData.drm || null,
             });
 

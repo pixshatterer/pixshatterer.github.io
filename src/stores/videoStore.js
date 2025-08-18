@@ -5,6 +5,7 @@ export const [videoStore, setVideoStore] = createStore({
   title: "",
   contentType: "",
   isLive: false,
+  streamType: null, // Will be set based on isLive value
   isPlaying: false,
   currentTime: 0,
   // DRM configuration
@@ -26,7 +27,7 @@ export const [videoStore, setVideoStore] = createStore({
 });
 
 export const videoActions = {
-  loadStream({ url, title, contentType, isLive, drm }) {
+  loadStream({ url, title, contentType, isLive, drm, streamType }) {
     const drmConfig = drm ? {
       licenseUrl: drm.licenseUrl || "",
       keySystem: drm.keySystem || "com.widevine.alpha",
@@ -44,6 +45,7 @@ export const videoActions = {
       title, 
       contentType,
       isLive,
+      streamType, // streamType is now passed from the caller
       drm: drmConfig
     });
   },
@@ -57,6 +59,7 @@ export const videoActions = {
       contentType: "",
       isPlaying: false,
       currentTime: 0,
+      streamType: null,
       drm: {
         licenseUrl: "",
         keySystem: "",

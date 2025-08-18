@@ -242,21 +242,23 @@ export const PlayerController = {
       const title = videoStore.title;
       const contentType = videoStore.contentType;
       const isLive = videoStore.isLive;
+      const streamType = videoStore.streamType;
       const drm = videoStore.drm;
 
-      // Debug the entire videoStore state via overlay
-      this._impl?.addDebugMessage?.({
-        type: "STORE_STATE_DEBUG",
-        data: {
-          url: videoStore.url,
-          title: videoStore.title,
-          contentType: videoStore.contentType,
-          isLive: videoStore.isLive,
-          isLiveType: typeof videoStore.isLive,
-          isLiveValue: JSON.stringify(videoStore.isLive)
-        },
-        source: "REACTIVE_DEBUG",
-      });
+          // Debug the entire videoStore state via overlay
+          this._impl?.addDebugMessage?.({
+            type: "STORE_STATE_DEBUG",
+            data: {
+              url: videoStore.url,
+              title: videoStore.title,
+              contentType: videoStore.contentType,
+              isLive: videoStore.isLive,
+              streamType: videoStore.streamType,
+              isLiveType: typeof videoStore.isLive,
+              isLiveValue: JSON.stringify(videoStore.isLive)
+            },
+            source: "REACTIVE_DEBUG",
+          });
 
       if (url?.trim()) {
         this._impl?.addDebugMessage?.({
@@ -266,6 +268,7 @@ export const PlayerController = {
             title,
             contentType,
             isLive,
+            streamType,
             hasDRM: drm.enabled
           },
           source: "REACTIVE_CONTROL",
@@ -277,33 +280,8 @@ export const PlayerController = {
           mediaInfo.contentId = url;
           mediaInfo.contentType = contentType || "application/dash+xml";
           
-          // Debug the isLive value and stream type assignment via overlay
-          this._impl?.addDebugMessage?.({
-            type: "STREAM_TYPE_DEBUG",
-            data: {
-              isLiveValue: isLive,
-              isLiveType: typeof isLive,
-              willSetToLive: !!isLive,
-              liveConstant: cast.framework.messages.StreamType.LIVE,
-              bufferedConstant: cast.framework.messages.StreamType.BUFFERED
-            },
-            source: "STREAM_TYPE_DEBUG",
-          });
-          
-          mediaInfo.streamType = isLive 
-            ? cast.framework.messages.StreamType.LIVE 
-            : cast.framework.messages.StreamType.BUFFERED;
-            
-          // Debug the final stream type assignment
-          this._impl?.addDebugMessage?.({
-            type: "STREAM_TYPE_SET",
-            data: {
-              finalStreamType: mediaInfo.streamType,
-              streamTypeText: isLive ? "LIVE" : "BUFFERED",
-              isLiveInput: isLive
-            },
-            source: "STREAM_TYPE_DEBUG",
-          });
+          // Use streamType from store instead of calculating it here
+          mediaInfo.streamType = streamType;
 
           // Add DRM configuration if enabled
           if (drm.enabled && drm.licenseUrl) {
@@ -392,7 +370,7 @@ export const PlayerController = {
               contentType,
               isLive,
               streamType: mediaInfo.streamType,
-              streamTypeText: isLive ? "LIVE" : "BUFFERED",
+              streamTypeText: streamType === cast.framework.messages.StreamType.LIVE ? "LIVE" : "BUFFERED",
               hasDRM: drm.enabled
             },
             source: "PLAYER_CONTROLLER",
