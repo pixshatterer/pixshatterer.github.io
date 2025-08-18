@@ -41,38 +41,87 @@ function handleLoadStream(streamData) {
   }
 }
 
-export function initializeCastReceiver() {
-  // Check if Cast framework is available
-  if (typeof cast === "undefined") {
-    console.error("Cast framework not loaded. Make sure the CAF Receiver runtime script is included.");
-    throw new Error("Cast framework not loaded. Make sure the CAF Receiver runtime script is included.");
-  }
+function waitForCastFramework() {
+  return new Promise((resolve, reject) => {
+    if (typeof cast !== "undefined" && cast.framework && cast.framework.CastReceiverContext) {
+      resolve();
+      return;
+    }
 
+    let attempts = 0;
+    const maxAttempts = 20; // 2 seconds max wait
+    
+    const checkInterval = setInterval(() => {
+      attempts++;
+      
+      if (typeof cast !== "undefined" && cast.framework && cast.framework.CastReceiverContext) {
+        clearInterval(checkInterval);
+        resolve();
+      } else if (attempts >= maxAttempts) {
+        clearInterval(checkInterval);
+        reject(new Error("Cast framework did not load within timeout"));
+      }
+    }, 100);
+  });
+}
+
+export async function initializeCastReceiver() {
   try {
+    // Wait for Cast framework to be ready
+    await waitForCastFramework();
+    
+    // Double-check all required Cast framework components are available
+    if (!cast.framework?.CastReceiverContext) {
+      throw new Error("CastReceiverContext not available");
+    }
+    
+    if (!cast.framework?.events?.EventType) {
+      throw new Error("Cast framework events not available");
+    }
+
     castContext = cast.framework.CastReceiverContext.getInstance();
     const playerManager = castContext.getPlayerManager();
 
-    // Add event listeners
-    playerManager.addEventListener(
-      cast.framework.events.EventType.PLAYER_STATE_CHANGED,
-      (event) => {
-        console.log("Player state changed:", event.playerState);
-        if (event.playerState === cast.framework.messages.PlayerState.PLAYING) {
-          PlayerController.updatePlayback({ isPlaying: true });
-        } else if (
-          event.playerState === cast.framework.messages.PlayerState.PAUSED
-        ) {
-          PlayerController.updatePlayback({ isPlaying: false });
-        }
-      }
-    );
+    // Verify event types exist before using them
+    const EventType = cast.framework.events.EventType;
+    const SystemEventType = cast.framework.system?.EventType;
+    
+    console.log("Available event types:", {
+      PLAYER_STATE_CHANGED: EventType.PLAYER_STATE_CHANGED,
+      TIME_UPDATE: EventType.TIME_UPDATE,
+      SENDER_CONNECTED: SystemEventType?.SENDER_CONNECTED,
+      SENDER_DISCONNECTED: SystemEventType?.SENDER_DISCONNECTED
+    });
 
-    playerManager.addEventListener(
-      cast.framework.events.EventType.TIME_UPDATE,
-      (event) => {
-        PlayerController.updatePlayback({ currentTime: event.currentMediaTime || 0 });
-      }
-    );
+    // Add event listeners with checks
+    if (EventType.PLAYER_STATE_CHANGED) {
+      playerManager.addEventListener(
+        EventType.PLAYER_STATE_CHANGED,
+        (event) => {
+          console.log("Player state changed:", event.playerState);
+          if (event.playerState === cast.framework.messages.PlayerState.PLAYING) {
+            PlayerController.updatePlayback({ isPlaying: true });
+          } else if (
+            event.playerState === cast.framework.messages.PlayerState.PAUSED
+          ) {
+            PlayerController.updatePlayback({ isPlaying: false });
+          }
+        }
+      );
+    } else {
+      console.warn("PLAYER_STATE_CHANGED event type not available");
+    }
+
+    if (EventType.TIME_UPDATE) {
+      playerManager.addEventListener(
+        EventType.TIME_UPDATE,
+        (event) => {
+          PlayerController.updatePlayback({ currentTime: event.currentMediaTime || 0 });
+        }
+      );
+    } else {
+      console.warn("TIME_UPDATE event type not available");
+    }
 
     // Add custom message listener
     castContext.addCustomMessageListener(
@@ -86,33 +135,44 @@ export function initializeCastReceiver() {
       }
     );
 
+    // Set initial state
+    setCastReady(true);
+    setSenderConnected(false);
+
+    // Listen for sender connection events with checks
+    if (SystemEventType?.SENDER_CONNECTED) {
+      castContext.addEventListener(
+        SystemEventType.SENDER_CONNECTED,
+        () => {
+          console.log("Sender connected");
+          setSenderConnected(true);
+        }
+      );
+    } else {
+      console.warn("SENDER_CONNECTED event type not available");
+    }
+
+    if (SystemEventType?.SENDER_DISCONNECTED) {
+      castContext.addEventListener(
+        SystemEventType.SENDER_DISCONNECTED,
+        () => {
+          console.log("Sender disconnected");
+          setSenderConnected(false);
+        }
+      );
+    } else {
+      console.warn("SENDER_DISCONNECTED event type not available");
+    }
+
     // Start the cast context
     castContext.start();
     console.log("Cast receiver initialized successfully");
     
     // PlayerController.use(customAdapter); // swap adapter here if needed
-    setCastReady(true);
-    setSenderConnected(false);
-
-    // Listen for sender connection events
-    castContext.addEventListener(
-      cast.framework.system.EventType.SENDER_CONNECTED,
-      () => {
-        console.log("Sender connected");
-        setSenderConnected(true);
-      }
-    );
-
-    castContext.addEventListener(
-      cast.framework.system.EventType.SENDER_DISCONNECTED,
-      () => {
-        console.log("Sender disconnected");
-        setSenderConnected(false);
-      }
-    );
 
   } catch (error) {
     console.error("Error initializing Cast receiver:", error);
+    setCastReady(false);
     throw error;
   }
 }

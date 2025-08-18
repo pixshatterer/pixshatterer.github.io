@@ -7,9 +7,9 @@ import { testUtils } from "./utils/testUtils";
 export default function App() {
   const [error, setError] = createSignal("");
 
-  onMount(() => {
+  onMount(async () => {
     try {
-      initializeCastReceiver();
+      await initializeCastReceiver();
       setError("");
       console.log("✅ Cast receiver app loaded successfully");
       console.log("🔧 Test utilities available as window.testUtils or use testUtils in console");
