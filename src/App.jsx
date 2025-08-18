@@ -24,26 +24,24 @@ export default function App() {
 
   return (
     <div class="app-container">
-      <h1 class="app-title">Custom Receiver Tests</h1>
-      
-      {error() && (
-        <div class="error-message">
-          <strong>Error:</strong> {error()}
-        </div>
-      )}
-      
-      <div class="status-section">
-        <div class={`status-item ${castReady() ? 'status-ready' : 'status-pending'}`}>
-          Cast Ready: {castReady() ? "✓" : "⏳"}
-        </div>
-        <div class={`status-item ${senderConnected() ? 'status-connected' : 'status-disconnected'}`}>
-          Sender Connected: {senderConnected() ? "✓" : "✗"}
-        </div>
-      </div>
-      
       {/* Debug Overlay - Two Column Layout */}
       <div class="debug-overlay-container">
         <div class="debug-column debug-column-left">
+          {error() && (
+            <div class="error-message">
+              <strong>Error:</strong> {error()}
+            </div>
+          )}
+          
+          <div class="status-section">
+            <div class={`status-item ${castReady() ? 'status-ready' : 'status-pending'}`}>
+              Cast Ready: {castReady() ? "✓" : "⏳"}
+            </div>
+            <div class={`status-item ${senderConnected() ? 'status-connected' : 'status-disconnected'}`}>
+              Sender Connected: {senderConnected() ? "✓" : "✗"}
+            </div>
+          </div>
+
           <div class="video-info">
             <div class="video-info-header">Media Information</div>
         <div class="video-info-item">
