@@ -10,6 +10,13 @@ function handleLoadStream(streamData) {
   console.log("Loading stream:", streamData);
   
   try {
+    // Log debug message
+    PlayerController._impl?.addDebugMessage?.({
+      type: "LOAD_STREAM",
+      data: streamData,
+      source: "castService"
+    });
+    
     // Validate DRM requirements
     if (streamData.drm?.licenseUrl && !streamData.drm.licenseUrl.trim()) {
       throw new Error("DRM license URL is required but empty");
@@ -71,11 +78,24 @@ function handleLoadStream(streamData) {
 
       playerManager.load(request);
       console.log("Media loaded successfully", streamData.drm ? "with DRM" : "without DRM");
+      
+      // Log success message
+      PlayerController._impl?.addDebugMessage?.({
+        type: "MEDIA_LOADED",
+        data: { url: streamData.url, title: streamData.title, hasDRM: !!streamData.drm },
+        source: "castService"
+      });
     } else {
-      console.warn("Player manager not available or no URL provided");
+      const errorMsg = "Player manager not available or no URL provided";
+      console.warn(errorMsg);
+      PlayerController._impl?.addDebugError?.({
+        message: errorMsg,
+        data: { hasPlayerManager: !!playerManager, hasUrl: !!streamData.url }
+      });
     }
   } catch (error) {
     console.error("Error loading stream:", error);
+    PlayerController._impl?.addDebugError?.(error);
     throw error;
   }
 }
@@ -138,6 +158,14 @@ export async function initializeCastReceiver() {
         EventType.PLAYER_STATE_CHANGED,
         (event) => {
           console.log("Player state changed:", event.playerState);
+          
+          // Log debug message
+          PlayerController._impl?.addDebugMessage?.({
+            type: "PLAYER_STATE_CHANGED",
+            data: { playerState: event.playerState },
+            source: "CAF_EVENT"
+          });
+          
           if (event.playerState === cast.framework.messages.PlayerState.PLAYING) {
             PlayerController.updatePlayback({ isPlaying: true });
           } else if (
@@ -162,11 +190,47 @@ export async function initializeCastReceiver() {
       console.warn("TIME_UPDATE event type not available");
     }
 
+    // Add error event listeners
+    if (EventType.ERROR) {
+      playerManager.addEventListener(
+        EventType.ERROR,
+        (event) => {
+          console.error("Player error:", event);
+          PlayerController._impl?.addDebugError?.({
+            message: `Player error: ${event.detailedErrorCode || event.error}`,
+            data: event,
+            source: "CAF_ERROR"
+          });
+        }
+      );
+    }
+
+    if (EventType.BREAK_ENDED) {
+      playerManager.addEventListener(
+        EventType.BREAK_ENDED,
+        (event) => {
+          PlayerController._impl?.addDebugMessage?.({
+            type: "BREAK_ENDED",
+            data: event,
+            source: "CAF_EVENT"
+          });
+        }
+      );
+    }
+
     // Add custom message listener
     castContext.addCustomMessageListener(
       "urn:x-cast:com.ditu.control",
       (event) => {
         console.log("Received custom message:", event);
+        
+        // Log debug message
+        PlayerController._impl?.addDebugMessage?.({
+          type: "CUSTOM_MESSAGE",
+          data: event.data,
+          source: "CAST_SENDER"
+        });
+        
         const type = event.data?.type;
         if (type === "LOAD_STREAM") {
           handleLoadStream(event.data.streamData);
@@ -185,6 +249,13 @@ export async function initializeCastReceiver() {
         () => {
           console.log("Sender connected");
           setSenderConnected(true);
+          
+          // Log debug message
+          PlayerController._impl?.addDebugMessage?.({
+            type: "SENDER_CONNECTED",
+            data: { timestamp: new Date().toISOString() },
+            source: "CAF_EVENT"
+          });
         }
       );
     } else {
@@ -197,6 +268,13 @@ export async function initializeCastReceiver() {
         () => {
           console.log("Sender disconnected");
           setSenderConnected(false);
+          
+          // Log debug message
+          PlayerController._impl?.addDebugMessage?.({
+            type: "SENDER_DISCONNECTED", 
+            data: { timestamp: new Date().toISOString() },
+            source: "CAF_EVENT"
+          });
         }
       );
     } else {

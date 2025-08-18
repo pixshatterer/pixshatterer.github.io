@@ -4,6 +4,7 @@ import "./styles/cast-receiver.css";
 import { videoStore } from "./stores/videoStore";
 import { initializeCastReceiver, castReady, senderConnected } from "./services/castService";
 import { testUtils } from "./utils/testUtils";
+import DebugOverlay from "./components/DebugOverlay";
 
 export default function App() {
   const [error, setError] = createSignal("");
@@ -40,7 +41,11 @@ export default function App() {
         </div>
       </div>
       
-      <div class="video-info">
+      {/* Debug Overlay - Two Column Layout */}
+      <div class="debug-overlay-container">
+        <div class="debug-column debug-column-left">
+          <div class="video-info">
+            <div class="video-info-header">Media Information</div>
         <div class="video-info-item">
           <span class="video-info-label">Title:</span>
           <span class="video-info-value">{videoStore.title || "N/A"}</span>
@@ -75,14 +80,20 @@ export default function App() {
             </div>
           </>
         )}
-      </div>
+          </div>
 
-      <div class="developer-info">
-        <div class="developer-info-title">Developer Info:</div>
-        <div class="developer-info-item">• Open browser console to see detailed logs</div>
-        <div class="developer-info-item">• Use <code>window.testUtils.logCastState()</code> to check Cast state</div>
-        <div class="developer-info-item">• Use <code>window.testUtils.simulateLoadStream()</code> to test loading</div>
-        <div class="developer-info-item">• Use <code>window.testUtils.simulateLoadDRMStream()</code> to test DRM content</div>
+          <div class="developer-info">
+            <div class="developer-info-title">Developer Info:</div>
+            <div class="developer-info-item">• Open browser console to see detailed logs</div>
+            <div class="developer-info-item">• Use <code>window.testUtils.logCastState()</code> to check Cast state (dev only)</div>
+            <div class="developer-info-item">• Debug overlay shows real Cast messages and errors</div>
+            <div class="developer-info-item">• Messages will appear when Cast senders connect and send commands</div>
+          </div>
+        </div>
+        
+        <div class="debug-column debug-column-right">
+          <DebugOverlay />
+        </div>
       </div>
     </div>
   );

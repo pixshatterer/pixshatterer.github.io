@@ -1,50 +1,9 @@
 // Test utilities for simulating Cast functionality when testing locally
+// Note: These functions only work in local development, not on actual Cast devices
+import { videoActions } from "../stores/videoStore";
+
 export const testUtils = {
-  simulateLoadStream(data = {}) {
-    const streamData = {
-      url: data.url || "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-      title: data.title || "Test Video",
-      contentType: data.contentType || "video/mp4",
-      autoplay: data.autoplay !== false,
-      drm: data.drm || null,
-      ...data
-    };
-
-    console.log("🧪 Simulating LOAD_STREAM message:", streamData);
-    
-    // Simulate the custom message that would come from a Cast sender
-    if (typeof cast !== "undefined") {
-      console.log("Cast framework available - would normally receive message from sender");
-      
-      // Manually trigger the handler if Cast context exists
-      try {
-        cast.framework.CastReceiverContext.getInstance();
-        console.log("Cast context available, would normally receive this from sender");
-      } catch (error) {
-        console.warn("Cast context not available for simulation:", error.message);
-      }
-    }
-    
-    return streamData;
-  },
-
-  simulateLoadDRMStream(drmConfig = {}) {
-    const defaultDrmConfig = {
-      licenseUrl: drmConfig.licenseUrl || "https://example.com/drm/license",
-      keySystem: drmConfig.keySystem || "com.widevine.alpha",
-      headers: drmConfig.headers || {
-        "X-Custom-Header": "Bearer token123"
-      }
-    };
-
-    return this.simulateLoadStream({
-      url: drmConfig.url || "https://example.com/protected-content.mpd",
-      title: drmConfig.title || "DRM Protected Video",
-      contentType: drmConfig.contentType || "application/dash+xml",
-      drm: defaultDrmConfig
-    });
-  },
-
+  // Only for local development - checks Cast framework status
   logCastState() {
     console.log("🔍 Current Cast State:");
     console.log("- Cast framework available:", typeof cast !== "undefined");
@@ -57,10 +16,20 @@ export const testUtils = {
         console.log("- Cast context error:", error.message);
       }
     }
+    
+    // Log debug message
+    videoActions.addDebugMessage({
+      type: "CAST_STATE_CHECK",
+      data: { 
+        castAvailable: typeof cast !== "undefined",
+        timestamp: new Date().toISOString()
+      },
+      source: "DEV_UTILS"
+    });
   }
 };
 
-// Make it available globally for browser console testing
+// Make it available globally for browser console testing in development
 if (typeof window !== "undefined") {
   window.testUtils = testUtils;
 }

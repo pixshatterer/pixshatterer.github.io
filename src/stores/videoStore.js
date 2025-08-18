@@ -13,6 +13,15 @@ export const [videoStore, setVideoStore] = createStore({
     headers: {},   // Additional headers for license requests
     enabled: false
   },
+  // Debug information
+  debug: {
+    messages: [],
+    errors: [],
+    lastMessage: null,
+    lastError: null,
+    messageCount: 0,
+    errorCount: 0
+  }
 });
 
 export const videoActions = {
@@ -52,6 +61,42 @@ export const videoActions = {
         headers: {},
         enabled: false
       },
+      debug: {
+        messages: [],
+        errors: [],
+        lastMessage: null,
+        lastError: null,
+        messageCount: 0,
+        errorCount: 0
+      }
     });
   },
+  addDebugMessage(message) {
+    const timestamp = new Date().toLocaleTimeString();
+    const messageWithTime = { ...message, timestamp };
+    
+    setVideoStore('debug', 'messages', prev => [messageWithTime, ...prev].slice(0, 10)); // Keep last 10
+    setVideoStore('debug', 'lastMessage', messageWithTime);
+    setVideoStore('debug', 'messageCount', prev => prev + 1);
+  },
+  addDebugError(error) {
+    const timestamp = new Date().toLocaleTimeString();
+    const errorWithTime = { 
+      message: error.message || error,
+      stack: error.stack,
+      timestamp 
+    };
+    
+    setVideoStore('debug', 'errors', prev => [errorWithTime, ...prev].slice(0, 10)); // Keep last 10
+    setVideoStore('debug', 'lastError', errorWithTime);
+    setVideoStore('debug', 'errorCount', prev => prev + 1);
+  },
+  clearDebugMessages() {
+    setVideoStore('debug', 'messages', []);
+    setVideoStore('debug', 'messageCount', 0);
+  },
+  clearDebugErrors() {
+    setVideoStore('debug', 'errors', []);
+    setVideoStore('debug', 'errorCount', 0);
+  }
 };

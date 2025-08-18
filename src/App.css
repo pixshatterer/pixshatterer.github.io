@@ -2,6 +2,53 @@
   padding: 16px;
   max-width: 800px;
   margin: 0 auto;
+  position: absolute;
+  top: 5%;
+  left: 5%;
+  opacity: 0.7;
+}
+
+/* Debug overlay container - two column layout */
+.debug-overlay-container {
+  position: fixed;
+  top: 10vh;
+  left: 2vw;
+  width: 60vw;
+  height: 80vh;
+  display: flex;
+  gap: 16px;
+  z-index: 1000;
+  pointer-events: none; /* Allow video interaction underneath */
+}
+
+.debug-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: auto; /* Re-enable pointer events for debug content */
+}
+
+.debug-column-left {
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 12px;
+  overflow-y: auto;
+}
+
+.debug-column-right {
+  /* DebugOverlay component handles its own styling */
+  min-height: 0; /* Allow flexbox shrinking */
+}
+
+.video-info-header {
+  font-weight: bold;
+  color: #4CAF50;
+  margin-bottom: 12px;
+  font-size: 14px;
+  border-bottom: 1px solid #333;
+  padding-bottom: 4px;
 }
 
 .app-title {
