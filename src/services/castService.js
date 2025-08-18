@@ -10,10 +10,31 @@ function handleLoadStream(streamData) {
   console.log("Loading stream:", streamData);
 
   try {
-    // Log debug message
+    // Enhanced validation and debugging
+    if (!streamData?.url) {
+      throw new Error("Stream URL is required");
+    }
+
+    // URL validation
+    try {
+      new URL(streamData.url);
+    } catch {
+      throw new Error(`Invalid URL format: ${streamData.url}`);
+    }
+
+    // Log debug message with validation details
     PlayerController._impl?.addDebugMessage?.({
       type: "LOAD_STREAM",
-      data: streamData,
+      data: {
+        ...streamData,
+        validation: {
+          hasUrl: !!streamData.url,
+          urlValid: true,
+          hasDRM: !!streamData.drm?.licenseUrl,
+          contentType: streamData.contentType || "application/dash+xml",
+          isLive: streamData.isLive || false
+        }
+      },
       source: "castService",
     });
 
@@ -85,6 +106,33 @@ function handleLoadStream(streamData) {
       const request = new cast.framework.messages.LoadRequestData();
       request.media = mediaInfo;
       request.autoplay = streamData.autoplay !== false;
+
+      // Debug: Log the exact media configuration before loading
+      console.log("About to load media with configuration:", {
+        contentId: mediaInfo.contentId,
+        contentType: mediaInfo.contentType,
+        streamType: mediaInfo.streamType,
+        metadata: mediaInfo.metadata,
+        customData: mediaInfo.customData,
+        autoplay: request.autoplay
+      });
+
+      PlayerController._impl?.addDebugMessage?.({
+        type: "MEDIA_CONFIG_DEBUG",
+        data: {
+          mediaInfo: {
+            contentId: mediaInfo.contentId,
+            contentType: mediaInfo.contentType,
+            streamType: mediaInfo.streamType,
+            hasDRM: !!mediaInfo.customData?.drm,
+            hasMetadata: !!mediaInfo.metadata
+          },
+          requestConfig: {
+            autoplay: request.autoplay
+          }
+        },
+        source: "castService",
+      });
 
       playerManager.load(request);
       console.log(
@@ -220,9 +268,42 @@ export async function initializeCastReceiver() {
     if (EventType.ERROR) {
       playerManager.addEventListener(EventType.ERROR, (event) => {
         console.error("Player error:", event);
+        
+        // Detailed error analysis
+        const errorDetails = {
+          errorCode: event.error,
+          detailedErrorCode: event.detailedErrorCode,
+          reason: event.reason,
+          mediaSessionId: event.mediaSessionId,
+          source: "CAF_ERROR"
+        };
+
+        // Specific handling for 905 (LOAD_FAILED) errors
+        if (event.error === 905 || event.detailedErrorCode === 905) {
+          errorDetails.analysis = "LOAD_FAILED (905): Media failed to load";
+          errorDetails.possibleCauses = [
+            "Invalid or unreachable URL",
+            "CORS configuration issues", 
+            "DRM license server problems",
+            "Unsupported media format/codec",
+            "Network connectivity issues"
+          ];
+          
+          // Get current media info for debugging
+          const mediaSession = playerManager.getMediaSession();
+          if (mediaSession?.media) {
+            errorDetails.mediaInfo = {
+              contentId: mediaSession.media.contentId,
+              contentType: mediaSession.media.contentType,
+              streamType: mediaSession.media.streamType,
+              hasDRM: !!mediaSession.media.customData?.drm
+            };
+          }
+        }
+
         PlayerController._impl?.addDebugError?.({
-          message: `Player error: ${event.detailedErrorCode || event.error}`,
-          data: event,
+          message: `Player error ${event.error}: ${event.detailedErrorCode || 'Unknown'}`,
+          data: errorDetails,
           source: "CAF_ERROR",
         });
       });

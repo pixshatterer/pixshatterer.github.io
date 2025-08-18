@@ -1,8 +1,12 @@
-import { For } from "solid-js";
+import { For, createMemo } from "solid-js";
 import { videoStore } from "../stores/videoStore";
 import "./DebugOverlay.css";
 
 export default function DebugOverlay() {
+  // Create reactive computed values for the arrays to ensure proper updates
+  const recentMessages = createMemo(() => videoStore.debug.messages.slice(0, 5));
+  const recentErrors = createMemo(() => videoStore.debug.errors.slice(0, 3));
+
   return (
     <div class="debug-overlay">
       <div class="debug-header">
@@ -38,15 +42,16 @@ export default function DebugOverlay() {
           )}
 
           <div class="debug-list">
-            <For each={videoStore.debug.messages.slice(0, 5)} fallback={
+            <For each={recentMessages()} fallback={
               <div class="debug-empty">Waiting for Cast messages...</div>
             }>
-              {(message) => (
+              {(message, index) => (
                 <div class="debug-item">
                   <div class="debug-item-header">
                     <span class="debug-item-type">{message.type}</span>
                     <span class="debug-item-source">{message.source}</span>
                     <span class="debug-item-time">{message.timestamp}</span>
+                    <span class="debug-item-index">#{index() + 1}</span>
                   </div>
                   <div class="debug-item-data">
                     <pre>{JSON.stringify(message.data, null, 2)}</pre>
@@ -55,17 +60,23 @@ export default function DebugOverlay() {
               )}
             </For>
             
-            {videoStore.debug.errors.length > 0 && (
+            {recentErrors().length > 0 && (
               <div class="debug-errors-summary">
                 <div class="debug-errors-title">Recent Errors:</div>
-                <For each={videoStore.debug.errors.slice(0, 3)}>
-                  {(error) => (
+                <For each={recentErrors()}>
+                  {(error, index) => (
                     <div class="debug-item error">
                       <div class="debug-item-header">
                         <span class="debug-item-type">ERROR</span>
                         <span class="debug-item-time">{error.timestamp}</span>
+                        <span class="debug-item-index">#{index() + 1}</span>
                       </div>
                       <div class="debug-item-message">{error.message}</div>
+                      {error.data && (
+                        <div class="debug-item-data">
+                          <pre>{JSON.stringify(error.data, null, 2)}</pre>
+                        </div>
+                      )}
                     </div>
                   )}
                 </For>
