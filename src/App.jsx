@@ -24,7 +24,7 @@ export default function App() {
 
   return (
     <div class="app-container">
-      <h1 class="app-title">Custom Receiver · Solid</h1>
+      <h1 class="app-title">Custom Receiver Tests</h1>
       
       {error() && (
         <div class="error-message">
