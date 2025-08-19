@@ -175,8 +175,7 @@ export const PlayerController = {
         TIME_UPDATE: !!EventType.TIME_UPDATE,
         ERROR: !!EventType.ERROR,
         BREAK_ENDED: !!EventType.BREAK_ENDED,
-        SEEK: !!EventType.SEEK,
-        VOLUME_CHANGED: !!EventType.VOLUME_CHANGED
+        SEEK: !!EventType.SEEK
       },
       source: "EVENT_SETUP",
     });
@@ -345,28 +344,6 @@ export const PlayerController = {
           currentTime: event.currentTime,
           resumeState: event.resumeState,
           detectMethod: "SEEK_EVENT",
-          timestamp: new Date().toISOString()
-        });
-      });
-    }
-
-    // Volume change events (if supported)
-    if (EventType.VOLUME_CHANGED) {
-      playerManager.addEventListener(EventType.VOLUME_CHANGED, (event) => {
-        this._impl?.addDebugMessage?.({
-          type: "VOLUME_CHANGED_DETECTED",
-          data: {
-            volume: event.volume?.level,
-            muted: event.volume?.muted,
-            timestamp: new Date().toISOString()
-          },
-          source: "CAF_EVENT",
-        });
-
-        // Send volume change event to senders
-        this.sendPlayerEvent("VOLUME_CHANGED", {
-          volume: event.volume?.level,
-          muted: event.volume?.muted,
           timestamp: new Date().toISOString()
         });
       });
