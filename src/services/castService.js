@@ -148,7 +148,8 @@ export async function initializeCastReceiver() {
                 isLiveValue: JSON.stringify(streamData.isLive),
                 url: streamData.url,
                 title: streamData.title,
-                contentType: streamData.contentType
+                contentType: streamData.contentType,
+                metadata: streamData.metadata
               },
               source: "CAST_MESSAGE",
             });
@@ -158,10 +159,17 @@ export async function initializeCastReceiver() {
             const streamType = isLive 
               ? cast.framework.messages.StreamType.LIVE 
               : cast.framework.messages.StreamType.BUFFERED;
+            
+            // Extract title from metadata attribute
+            const title = `${streamData?.metadata?.title || ""}${
+                streamData?.metadata?.episodeTitle
+                ? ` - ${streamData?.metadata?.episodeTitle}`
+                : ""
+            }` || "";
 
             PlayerController.loadStream({
               url: streamData.url || "",
-              title: streamData.title || "",
+              title: title,
               contentType: streamData.contentType || "application/dash+xml",
               isLive: isLive,
               streamType: streamType,
