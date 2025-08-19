@@ -1,11 +1,28 @@
 import { videoActions, videoStore } from "../stores/videoStore";
 import { createEffect } from "solid-js";
+import { sendMessageToSenders } from "../services/castService";
 
 let castContext = null;
 
 export const PlayerController = {
   _impl: videoActions,
   
+  // Send player events to connected senders
+  sendPlayerEvent(eventType, eventData) {
+    return sendMessageToSenders("PLAYER_EVENT", {
+      eventType,
+      eventData,
+      playerState: {
+        isPlaying: videoStore.isPlaying,
+        currentTime: videoStore.currentTime,
+        url: videoStore.url,
+        title: videoStore.title,
+        isLive: videoStore.isLive,
+        streamType: videoStore.streamType
+      }
+    });
+  },
+
   // Initialize the controller with Cast context
   initialize(context) {
     castContext = context;
@@ -136,33 +153,57 @@ export const PlayerController = {
           source: "CAF_EVENT",
         });
 
+        // Send player state change to senders
+        this.sendPlayerEvent("STATE_CHANGED", {
+          playerState: event.playerState,
+          timestamp: new Date().toISOString()
+        });
+
         // When media starts playing, capture the actual media session info
         if (event.playerState === cast.framework.messages.PlayerState.PLAYING) {
           this.updatePlayback({ isPlaying: true });
           
           // Capture actual media session information only if it exists
           const mediaSession = playerManager.getMediaSession();
-          if (mediaSession && mediaSession.media) {
+          if (mediaSession?.media) {
+            const mediaInfo = {
+              contentId: mediaSession.media.contentId,
+              contentType: mediaSession.media.contentType,
+              streamType: mediaSession.media.streamType,
+              duration: mediaSession.media.duration,
+              title: mediaSession.media.metadata?.title,
+              subtitle: mediaSession.media.metadata?.subtitle,
+              hasMetadata: !!mediaSession.media.metadata,
+              metadataType: mediaSession.media.metadata?.metadataType,
+              customData: mediaSession.media.customData,
+              sessionId: mediaSession.sessionId,
+              mediaSessionId: mediaSession.mediaSessionId
+            };
+
             this._impl?.addDebugMessage?.({
               type: "MEDIA_SESSION_INFO",
-              data: {
+              data: mediaInfo,
+              source: "MEDIA_SESSION",
+            });
+
+            // Send media started event to senders
+            this.sendPlayerEvent("MEDIA_STARTED", {
+              mediaInfo: {
                 contentId: mediaSession.media.contentId,
                 contentType: mediaSession.media.contentType,
                 streamType: mediaSession.media.streamType,
                 duration: mediaSession.media.duration,
-                title: mediaSession.media.metadata?.title,
-                subtitle: mediaSession.media.metadata?.subtitle,
-                hasMetadata: !!mediaSession.media.metadata,
-                metadataType: mediaSession.media.metadata?.metadataType,
-                customData: mediaSession.media.customData,
-                sessionId: mediaSession.sessionId,
-                mediaSessionId: mediaSession.mediaSessionId
-              },
-              source: "MEDIA_SESSION",
+                title: mediaSession.media.metadata?.title
+              }
             });
           }
         } else if (event.playerState === cast.framework.messages.PlayerState.PAUSED) {
           this.updatePlayback({ isPlaying: false });
+          
+          // Send paused event to senders
+          this.sendPlayerEvent("MEDIA_PAUSED", {
+            currentTime: videoStore.currentTime
+          });
         }
       });
     }
@@ -213,6 +254,15 @@ export const PlayerController = {
           message: `Player error ${event.error}: ${event.detailedErrorCode || 'Unknown'}`,
           data: errorDetails,
           source: "CAF_ERROR",
+        });
+
+        // Send error event to senders
+        this.sendPlayerEvent("ERROR", {
+          errorCode: event.error,
+          detailedErrorCode: event.detailedErrorCode,
+          reason: event.reason,
+          analysis: errorDetails.analysis,
+          possibleCauses: errorDetails.possibleCauses
         });
       });
     }

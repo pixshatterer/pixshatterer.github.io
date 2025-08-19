@@ -1,0 +1,1 @@
+export const NAMESPACE = "urn:x-cast:com.ditu.control"

@@ -1,10 +1,63 @@
 import { createSignal } from "solid-js";
 import { PlayerController } from "../controllers/playerController";
+import { NAMESPACE } from "../config/playerConfig";
 
 export const [castReady, setCastReady] = createSignal(false);
 export const [senderConnected, setSenderConnected] = createSignal(false);
 
 let castContext = null;
+
+// Function to send custom messages to all connected senders
+export function sendMessageToSenders(messageType, data) {
+  if (!castContext) {
+    PlayerController._impl?.addDebugError?.({
+      message: "Cast context not available - cannot send message to senders",
+      data: { messageType, data },
+      source: "CAST_SERVICE",
+    });
+    return false;
+  }
+
+  try {
+    const message = {
+      type: messageType,
+      data: data,
+      timestamp: new Date().toISOString()
+    };
+
+    // Send to all connected senders on the custom namespace
+    castContext.sendCustomMessage(
+      NAMESPACE, 
+      undefined, // senderId - undefined means send to all senders
+      message
+    );
+
+    // Log the sent message for debugging
+    PlayerController._impl?.addDebugMessage?.({
+      type: "MESSAGE_SENT_TO_SENDER",
+      data: {
+        messageType,
+        sentData: data,
+        success: true
+      },
+      source: "CAST_SERVICE",
+    });
+
+    return true;
+  } catch (error) {
+    PlayerController._impl?.addDebugError?.({
+      message: "Failed to send message to senders",
+      data: {
+        messageType,
+        error: error.message || error,
+        data
+      },
+      source: "CAST_SERVICE",
+    });
+
+    return false;
+  }
+}
 
 function waitForCastFramework() {
   return new Promise((resolve, reject) => {
