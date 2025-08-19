@@ -7,9 +7,32 @@ let castContext = null;
 export const PlayerController = {
   _impl: videoActions,
   
+  // Helper function to convert player state to readable string
+  getPlayerStateString(playerState) {
+    const states = cast.framework.messages.PlayerState;
+    switch (playerState) {
+      case states.IDLE: return "IDLE";
+      case states.PLAYING: return "PLAYING";
+      case states.PAUSED: return "PAUSED";
+      case states.BUFFERING: return "BUFFERING";
+      default: return `UNKNOWN(${playerState})`;
+    }
+  },
+
   // Send player events to connected senders
   sendPlayerEvent(eventType, eventData) {
-    return sendMessageToSenders("PLAYER_EVENT", {
+    this._impl?.addDebugMessage?.({
+      type: "SENDING_PLAYER_EVENT",
+      data: {
+        eventType,
+        eventData,
+        hasData: !!eventData,
+        timestamp: new Date().toISOString()
+      },
+      source: "EVENT_SENDER",
+    });
+
+    const success = sendMessageToSenders("PLAYER_EVENT", {
       eventType,
       eventData,
       playerState: {
@@ -21,6 +44,18 @@ export const PlayerController = {
         streamType: videoStore.streamType
       }
     });
+
+    this._impl?.addDebugMessage?.({
+      type: "PLAYER_EVENT_SEND_RESULT",
+      data: {
+        eventType,
+        success,
+        timestamp: new Date().toISOString()
+      },
+      source: "EVENT_SENDER",
+    });
+
+    return success;
   },
 
   // Initialize the controller with Cast context
@@ -139,7 +174,9 @@ export const PlayerController = {
         PLAYER_STATE_CHANGED: !!EventType.PLAYER_STATE_CHANGED,
         TIME_UPDATE: !!EventType.TIME_UPDATE,
         ERROR: !!EventType.ERROR,
-        BREAK_ENDED: !!EventType.BREAK_ENDED
+        BREAK_ENDED: !!EventType.BREAK_ENDED,
+        SEEK: !!EventType.SEEK,
+        VOLUME_CHANGED: !!EventType.VOLUME_CHANGED
       },
       source: "EVENT_SETUP",
     });
@@ -147,20 +184,32 @@ export const PlayerController = {
     // Player state changes
     if (EventType.PLAYER_STATE_CHANGED) {
       playerManager.addEventListener(EventType.PLAYER_STATE_CHANGED, (event) => {
+        // Enhanced debugging for all state changes
         this._impl?.addDebugMessage?.({
           type: "PLAYER_STATE_CHANGED",
-          data: { playerState: event.playerState },
+          data: { 
+            playerState: event.playerState,
+            playerStateString: this.getPlayerStateString(event.playerState),
+            timestamp: new Date().toISOString()
+          },
           source: "CAF_EVENT",
         });
 
         // Send player state change to senders
         this.sendPlayerEvent("STATE_CHANGED", {
           playerState: event.playerState,
+          playerStateString: this.getPlayerStateString(event.playerState),
           timestamp: new Date().toISOString()
         });
 
         // When media starts playing, capture the actual media session info
         if (event.playerState === cast.framework.messages.PlayerState.PLAYING) {
+          this._impl?.addDebugMessage?.({
+            type: "PLAYING_STATE_DETECTED",
+            data: { action: "Setting isPlaying to true" },
+            source: "STATE_HANDLER",
+          });
+          
           this.updatePlayback({ isPlaying: true });
           
           // Capture actual media session information only if it exists
@@ -198,11 +247,41 @@ export const PlayerController = {
             });
           }
         } else if (event.playerState === cast.framework.messages.PlayerState.PAUSED) {
+          this._impl?.addDebugMessage?.({
+            type: "PAUSED_STATE_DETECTED",
+            data: { 
+              action: "Setting isPlaying to false",
+              currentTime: videoStore.currentTime,
+              pauseEventReceived: true
+            },
+            source: "STATE_HANDLER",
+          });
+          
           this.updatePlayback({ isPlaying: false });
           
           // Send paused event to senders
           this.sendPlayerEvent("MEDIA_PAUSED", {
-            currentTime: videoStore.currentTime
+            currentTime: videoStore.currentTime,
+            timestamp: new Date().toISOString()
+          });
+          
+          this._impl?.addDebugMessage?.({
+            type: "PAUSE_EVENT_SENT_TO_SENDER",
+            data: { 
+              currentTime: videoStore.currentTime,
+              success: true
+            },
+            source: "STATE_HANDLER",
+          });
+        } else {
+          // Log any other state changes
+          this._impl?.addDebugMessage?.({
+            type: "OTHER_STATE_CHANGE",
+            data: { 
+              playerState: event.playerState,
+              playerStateString: this.getPlayerStateString(event.playerState)
+            },
+            source: "STATE_HANDLER",
           });
         }
       });
@@ -210,9 +289,85 @@ export const PlayerController = {
 
     // Time updates
     if (EventType.TIME_UPDATE) {
+      let lastReportedTime = 0;
+      const seekDetectionThreshold = 5; // seconds - if time jumps more than this, consider it a seek
+      
       playerManager.addEventListener(EventType.TIME_UPDATE, (event) => {
+        const currentTime = event.currentMediaTime || 0;
+        const timeDifference = Math.abs(currentTime - lastReportedTime);
+        
+        // Detect seek operations (large time jumps)
+        if (lastReportedTime > 0 && timeDifference > seekDetectionThreshold) {
+          this._impl?.addDebugMessage?.({
+            type: "SEEK_DETECTED_VIA_TIME_UPDATE",
+            data: {
+              previousTime: lastReportedTime,
+              newTime: currentTime,
+              timeDifference: timeDifference,
+              threshold: seekDetectionThreshold
+            },
+            source: "TIME_UPDATE",
+          });
+
+          // Send seek event to senders
+          this.sendPlayerEvent("SEEK", {
+            previousTime: lastReportedTime,
+            newTime: currentTime,
+            timeDifference: timeDifference,
+            detectMethod: "TIME_JUMP",
+            timestamp: new Date().toISOString()
+          });
+        }
+        
         this.updatePlayback({
-          currentTime: event.currentMediaTime || 0,
+          currentTime: currentTime,
+        });
+        
+        lastReportedTime = currentTime;
+      });
+    }
+
+    // Seek events (if supported)
+    if (EventType.SEEK) {
+      playerManager.addEventListener(EventType.SEEK, (event) => {
+        this._impl?.addDebugMessage?.({
+          type: "SEEK_EVENT_DETECTED",
+          data: {
+            currentTime: event.currentTime,
+            resumeState: event.resumeState,
+            timestamp: new Date().toISOString()
+          },
+          source: "CAF_EVENT",
+        });
+
+        // Send seek event to senders
+        this.sendPlayerEvent("SEEK", {
+          currentTime: event.currentTime,
+          resumeState: event.resumeState,
+          detectMethod: "SEEK_EVENT",
+          timestamp: new Date().toISOString()
+        });
+      });
+    }
+
+    // Volume change events (if supported)
+    if (EventType.VOLUME_CHANGED) {
+      playerManager.addEventListener(EventType.VOLUME_CHANGED, (event) => {
+        this._impl?.addDebugMessage?.({
+          type: "VOLUME_CHANGED_DETECTED",
+          data: {
+            volume: event.volume?.level,
+            muted: event.volume?.muted,
+            timestamp: new Date().toISOString()
+          },
+          source: "CAF_EVENT",
+        });
+
+        // Send volume change event to senders
+        this.sendPlayerEvent("VOLUME_CHANGED", {
+          volume: event.volume?.level,
+          muted: event.volume?.muted,
+          timestamp: new Date().toISOString()
         });
       });
     }
