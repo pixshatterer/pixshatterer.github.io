@@ -58,6 +58,33 @@ export const PlayerController = {
     return success;
   },
 
+  // Get current player state for debugging
+  getCurrentPlayerState() {
+    if (!castContext) return null;
+    
+    const playerManager = castContext.getPlayerManager();
+    if (!playerManager) return null;
+    
+    const mediaSession = playerManager.getMediaSession();
+    
+    const currentState = {
+      playerState: playerManager.getPlayerState(),
+      playerStateString: this.getPlayerStateString(playerManager.getPlayerState()),
+      hasMediaSession: !!mediaSession,
+      mediaSessionId: mediaSession?.mediaSessionId,
+      contentId: mediaSession?.media?.contentId,
+      timestamp: new Date().toISOString()
+    };
+
+    this._impl?.addDebugMessage?.({
+      type: "CURRENT_PLAYER_STATE_CHECK",
+      data: currentState,
+      source: "STATE_CHECK",
+    });
+
+    return currentState;
+  },
+
   // Initialize the controller with Cast context
   initialize(context) {
     castContext = context;
@@ -182,6 +209,16 @@ export const PlayerController = {
 
     // Player state changes
     if (EventType.PLAYER_STATE_CHANGED) {
+      this._impl?.addDebugMessage?.({
+        type: "PLAYER_STATE_LISTENER_ADDED",
+        data: { 
+          eventTypeExists: !!EventType.PLAYER_STATE_CHANGED,
+          playerManagerExists: !!playerManager,
+          timestamp: new Date().toISOString()
+        },
+        source: "EVENT_SETUP",
+      });
+
       playerManager.addEventListener(EventType.PLAYER_STATE_CHANGED, (event) => {
         // Enhanced debugging for all state changes
         this._impl?.addDebugMessage?.({
@@ -189,7 +226,11 @@ export const PlayerController = {
           data: { 
             playerState: event.playerState,
             playerStateString: this.getPlayerStateString(event.playerState),
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            eventObject: {
+              type: event.type,
+              target: !!event.target
+            }
           },
           source: "CAF_EVENT",
         });
@@ -409,6 +450,39 @@ export const PlayerController = {
         });
       });
     }
+
+    // Final debug message to confirm all event listeners are set up
+    this._impl?.addDebugMessage?.({
+      type: "ALL_EVENT_LISTENERS_COMPLETE",
+      data: {
+        playerManagerExists: !!playerManager,
+        setupComplete: true,
+        timestamp: new Date().toISOString()
+      },
+      source: "EVENT_SETUP",
+    });
+
+    // Set up periodic state checking to debug event issues
+    let lastKnownState = null;
+    setInterval(() => {
+      if (playerManager) {
+        const currentState = playerManager.getPlayerState();
+        if (currentState !== lastKnownState) {
+          this._impl?.addDebugMessage?.({
+            type: "STATE_CHANGE_DETECTED_BY_POLLING",
+            data: {
+              previousState: lastKnownState,
+              previousStateString: lastKnownState ? this.getPlayerStateString(lastKnownState) : "null",
+              currentState: currentState,
+              currentStateString: this.getPlayerStateString(currentState),
+              timestamp: new Date().toISOString()
+            },
+            source: "POLLING_DEBUG",
+          });
+          lastKnownState = currentState;
+        }
+      }
+    }, 1000); // Check every second
   },
 
   // Set up reactive effect to control Cast player based on store changes
