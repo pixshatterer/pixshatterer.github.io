@@ -22,12 +22,12 @@ export function sendMessageToSenders(messageType, data) {
     const message = {
       type: messageType,
       data: data,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     // Send to all connected senders on the custom namespace
     castContext.sendCustomMessage(
-      NAMESPACE, 
+      NAMESPACE,
       undefined, // senderId - undefined means send to all senders
       message
     );
@@ -38,7 +38,7 @@ export function sendMessageToSenders(messageType, data) {
       data: {
         messageType,
         sentData: data,
-        success: true
+        success: true,
       },
       source: "CAST_SERVICE",
     });
@@ -50,7 +50,7 @@ export function sendMessageToSenders(messageType, data) {
       data: {
         messageType,
         error: error.message || error,
-        data
+        data,
       },
       source: "CAST_SERVICE",
     });
@@ -111,98 +111,98 @@ export async function initializeCastReceiver() {
     const receiverOptions = new cast.framework.CastReceiverOptions();
     receiverOptions.maxInactivity = 6000; // 10 minutes
     receiverOptions.playbackConfig = new cast.framework.PlaybackConfig();
-    
+
     // Enable adaptive bitrate with quality preferences
     receiverOptions.playbackConfig.autoResumeDuration = 5;
     receiverOptions.playbackConfig.autoPauseDuration = null;
-    
+
     // Add custom message listener BEFORE starting (required)
-    castContext.addCustomMessageListener(
-      "urn:x-cast:com.ditu.control",
-      (event) => {
-        // Log debug message
-        PlayerController._impl?.addDebugMessage?.({
-          type: "CUSTOM_MESSAGE",
-          data: event.data,
-          source: "CAST_SENDER",
-        });
+    castContext.addCustomMessageListener(NAMESPACE, (event) => {
+      // Log debug message
+      PlayerController._impl?.addDebugMessage?.({
+        type: "CUSTOM_MESSAGE",
+        data: event.data,
+        source: "CAST_SENDER",
+      });
 
-        // Simply pass message data to PlayerController - let it handle everything
-        const type = event.data?.type;
-        if (type === "LOAD_STREAM" && event.data?.streamData) {
-          try {
-            // Validate and pass to PlayerController - no duplication
-            const streamData = event.data.streamData;
-            
-            // Basic validation only
-            if (!streamData?.url) {
-              throw new Error("Stream URL is required");
-            }
-
-            // Debug what we received
-            PlayerController._impl?.addDebugMessage?.({
-              type: "STREAM_DATA_RECEIVED",
-              data: {
-                isLive: streamData.isLive,
-                isLiveType: typeof streamData.isLive,
-                isLiveValue: JSON.stringify(streamData.isLive),
-                url: streamData.url,
-                title: streamData.title,
-                contentType: streamData.contentType,
-                customData: streamData.customData
-              },
-              source: "CAST_MESSAGE",
-            });
-
-            // Let PlayerController handle all the logic reactively
-            const isLive = streamData.isLive || false;
-            const streamType = isLive 
-              ? cast.framework.messages.StreamType.LIVE 
-              : cast.framework.messages.StreamType.BUFFERED;
-            
-            // Extract title from customDat attribute
-            const title = `${streamData?.customData?.title || ""}${
-                streamData?.customData?.episodeTitle
+      // Simply pass message data to PlayerController - let it handle everything
+      const type = event.data?.type;
+      if (type === "LOAD_STREAM" && event.data?.streamData) {
+        try {
+          // Validate and pass to PlayerController - no duplication
+          const streamData = event.data.streamData;
+          // Extract title from customDat attribute
+          const title =
+            `${streamData?.customData?.title || ""}${
+              streamData?.customData?.episodeTitle
                 ? ` - ${streamData?.customData?.episodeTitle}`
                 : ""
             }` || "Untitled Stream";
 
-            PlayerController.loadStream({
-              url: streamData.url || "",
-              title: title,
-              contentType: streamData.contentType || "application/dash+xml",
-              isLive: isLive,
-              streamType: streamType,
-              drm: streamData.drm || null,
-            });
-
-            PlayerController._impl?.addDebugMessage?.({
-              type: "STREAM_PASSED_TO_CONTROLLER",
-              data: { success: true },
-              source: "CAST_MESSAGE",
-            });
-          } catch (error) {
-            PlayerController._impl?.addDebugError?.({
-              message: "Error processing Cast message",
-              data: error,
-              source: "CAST_MESSAGE",
-            });
+          // Basic validation only
+          if (!streamData?.url) {
+            throw new Error("Stream URL is required");
           }
+
+          // Debug what we received
+          PlayerController._impl?.addDebugMessage?.({
+            type: "STREAM_DATA_RECEIVED",
+            data: {
+              isLive: streamData.isLive,
+              isLiveType: typeof streamData.isLive,
+              isLiveValue: JSON.stringify(streamData.isLive),
+              url: streamData.url,
+              title: streamData.title,
+              contentType: streamData.contentType,
+              customData: streamData.customData,
+            },
+            source: "CAST_MESSAGE",
+          });
+
+          // Let PlayerController handle all the logic reactively
+          const isLive = streamData.isLive || false;
+          const streamType = isLive
+            ? cast.framework.messages.StreamType.LIVE
+            : cast.framework.messages.StreamType.BUFFERED;
+
+          PlayerController.loadStream({
+            url: streamData.url || "",
+            title: title,
+            contentType: streamData.contentType || "application/dash+xml",
+            isLive: isLive,
+            streamType: streamType,
+            drm: streamData.drm || null,
+          });
+
+          PlayerController._impl?.addDebugMessage?.({
+            type: "STREAM_PASSED_TO_CONTROLLER",
+            data: { success: true },
+            source: "CAST_MESSAGE",
+          });
+        } catch (error) {
+          PlayerController._impl?.addDebugError?.({
+            message: "Error processing Cast message",
+            data: error,
+            source: "CAST_MESSAGE",
+          });
         }
       }
-    );
+    });
 
     // Apply receiver options
     try {
       castContext.start(receiverOptions);
-      
+
       PlayerController._impl?.addDebugMessage?.({
         type: "CAST_CONTEXT_STARTED",
         data: { withCustomOptions: true },
         source: "CAST_SERVICE",
       });
     } catch (error) {
-      if (error.message?.includes("already provided") || error.message?.includes("already started")) {
+      if (
+        error.message?.includes("already provided") ||
+        error.message?.includes("already started")
+      ) {
         PlayerController._impl?.addDebugMessage?.({
           type: "CAST_CONTEXT_ALREADY_STARTED",
           data: { usingDefaults: true },
@@ -268,10 +268,10 @@ export async function initializeCastReceiver() {
 
     PlayerController._impl?.addDebugMessage?.({
       type: "CAST_RECEIVER_INITIALIZED",
-      data: { 
+      data: {
         success: true,
         hasQualityOptimizations: true,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
       source: "CAST_SERVICE",
     });
