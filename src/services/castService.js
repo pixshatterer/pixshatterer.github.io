@@ -149,7 +149,7 @@ export async function initializeCastReceiver() {
                 url: streamData.url,
                 title: streamData.title,
                 contentType: streamData.contentType,
-                metadata: streamData.metadata
+                customData: streamData.customData
               },
               source: "CAST_MESSAGE",
             });
@@ -160,12 +160,12 @@ export async function initializeCastReceiver() {
               ? cast.framework.messages.StreamType.LIVE 
               : cast.framework.messages.StreamType.BUFFERED;
             
-            // Extract title from metadata attribute
-            const title = `${streamData?.metadata?.title || ""}${
-                streamData?.metadata?.episodeTitle
-                ? ` - ${streamData?.metadata?.episodeTitle}`
+            // Extract title from customDat attribute
+            const title = `${streamData?.customData?.title || ""}${
+                streamData?.customData?.episodeTitle
+                ? ` - ${streamData?.customData?.episodeTitle}`
                 : ""
-            }` || "";
+            }` || "Untitled Stream";
 
             PlayerController.loadStream({
               url: streamData.url || "",
