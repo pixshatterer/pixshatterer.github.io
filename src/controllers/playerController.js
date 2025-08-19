@@ -235,14 +235,7 @@ export const PlayerController = {
           source: "CAF_EVENT",
         });
 
-        // Send player state change to senders
-        this.sendPlayerEvent("STATE_CHANGED", {
-          playerState: event.playerState,
-          playerStateString: this.getPlayerStateString(event.playerState),
-          timestamp: new Date().toISOString()
-        });
-
-        // When media starts playing, capture the actual media session info
+        // Send specific player events based on state
         if (event.playerState === cast.framework.messages.PlayerState.PLAYING) {
           this._impl?.addDebugMessage?.({
             type: "PLAYING_STATE_DETECTED",
@@ -251,6 +244,14 @@ export const PlayerController = {
           });
           
           this.updatePlayback({ isPlaying: true });
+          
+          // Send RESUMED event (playing after pause) or MEDIA_STARTED (initial play)
+          this.sendPlayerEvent("RESUMED", {
+            state: event.playerState,
+            stateString: this.getPlayerStateString(event.playerState),
+            detectedBy: "event",
+            timestamp: new Date().toISOString()
+          });
           
           // Capture actual media session information only if it exists
           const mediaSession = playerManager.getMediaSession();
@@ -299,19 +300,21 @@ export const PlayerController = {
           
           this.updatePlayback({ isPlaying: false });
           
-          // Send paused event to senders
-          this.sendPlayerEvent("MEDIA_PAUSED", {
+          // Send PAUSED event (same as polling)
+          this.sendPlayerEvent("PAUSED", {
+            state: event.playerState,
+            stateString: this.getPlayerStateString(event.playerState),
+            detectedBy: "event",
             currentTime: videoStore.currentTime,
             timestamp: new Date().toISOString()
           });
-          
-          this._impl?.addDebugMessage?.({
-            type: "PAUSE_EVENT_SENT_TO_SENDER",
-            data: { 
-              currentTime: videoStore.currentTime,
-              success: true
-            },
-            source: "STATE_HANDLER",
+        } else if (event.playerState === cast.framework.messages.PlayerState.BUFFERING) {
+          // Send BUFFERING event (same as polling)
+          this.sendPlayerEvent("BUFFERING", {
+            state: event.playerState,
+            stateString: this.getPlayerStateString(event.playerState),
+            detectedBy: "event",
+            timestamp: new Date().toISOString()
           });
         } else {
           // Log any other state changes
@@ -461,60 +464,6 @@ export const PlayerController = {
       },
       source: "EVENT_SETUP",
     });
-
-    // Set up periodic state checking as fallback for unreliable events
-    let lastKnownState = null;
-    setInterval(() => {
-      if (playerManager) {
-        const currentState = playerManager.getPlayerState();
-        if (currentState !== lastKnownState) {
-          this._impl?.addDebugMessage?.({
-            type: "STATE_CHANGE_DETECTED_BY_POLLING",
-            data: {
-              previousState: lastKnownState,
-              previousStateString: lastKnownState ? this.getPlayerStateString(lastKnownState) : "null",
-              currentState: currentState,
-              currentStateString: this.getPlayerStateString(currentState),
-              timestamp: new Date().toISOString()
-            },
-            source: "POLLING_FALLBACK",
-          });
-
-          // Since events aren't firing reliably, use polling to send notifications
-          if (lastKnownState !== null) { // Skip first state detection
-            // Handle pause/play state changes
-            if (currentState === cast.framework.messages.PlayerState.PAUSED && 
-                lastKnownState === cast.framework.messages.PlayerState.PLAYING) {
-              this.sendPlayerEvent("PAUSED", {
-                state: currentState,
-                stateString: this.getPlayerStateString(currentState),
-                detectedBy: "polling",
-                timestamp: new Date().toISOString()
-              });
-              this.updatePlayback({ isPlaying: false });
-            } else if (currentState === cast.framework.messages.PlayerState.PLAYING && 
-                       lastKnownState === cast.framework.messages.PlayerState.PAUSED) {
-              this.sendPlayerEvent("RESUMED", {
-                state: currentState,
-                stateString: this.getPlayerStateString(currentState),
-                detectedBy: "polling",
-                timestamp: new Date().toISOString()
-              });
-              this.updatePlayback({ isPlaying: true });
-            } else if (currentState === cast.framework.messages.PlayerState.BUFFERING) {
-              this.sendPlayerEvent("BUFFERING", {
-                state: currentState,
-                stateString: this.getPlayerStateString(currentState),
-                detectedBy: "polling",
-                timestamp: new Date().toISOString()
-              });
-            }
-          }
-          
-          lastKnownState = currentState;
-        }
-      }
-    }, 500); // Check every 500ms for more responsive detection
   },
 
   // Set up reactive effect to control Cast player based on store changes
