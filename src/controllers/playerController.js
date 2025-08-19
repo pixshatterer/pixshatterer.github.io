@@ -461,60 +461,6 @@ export const PlayerController = {
       },
       source: "EVENT_SETUP",
     });
-
-    // Set up periodic state checking as fallback for unreliable events
-    let lastKnownState = null;
-    setInterval(() => {
-      if (playerManager) {
-        const currentState = playerManager.getPlayerState();
-        if (currentState !== lastKnownState) {
-          this._impl?.addDebugMessage?.({
-            type: "STATE_CHANGE_DETECTED_BY_POLLING",
-            data: {
-              previousState: lastKnownState,
-              previousStateString: lastKnownState ? this.getPlayerStateString(lastKnownState) : "null",
-              currentState: currentState,
-              currentStateString: this.getPlayerStateString(currentState),
-              timestamp: new Date().toISOString()
-            },
-            source: "POLLING_FALLBACK",
-          });
-
-          // Since events aren't firing reliably, use polling to send notifications
-          if (lastKnownState !== null) { // Skip first state detection
-            // Handle pause/play state changes
-            if (currentState === cast.framework.messages.PlayerState.PAUSED && 
-                lastKnownState === cast.framework.messages.PlayerState.PLAYING) {
-              this.sendPlayerEvent("PAUSED", {
-                state: currentState,
-                stateString: this.getPlayerStateString(currentState),
-                detectedBy: "polling",
-                timestamp: new Date().toISOString()
-              });
-              this.updatePlayback({ isPlaying: false });
-            } else if (currentState === cast.framework.messages.PlayerState.PLAYING && 
-                       lastKnownState === cast.framework.messages.PlayerState.PAUSED) {
-              this.sendPlayerEvent("RESUMED", {
-                state: currentState,
-                stateString: this.getPlayerStateString(currentState),
-                detectedBy: "polling",
-                timestamp: new Date().toISOString()
-              });
-              this.updatePlayback({ isPlaying: true });
-            } else if (currentState === cast.framework.messages.PlayerState.BUFFERING) {
-              this.sendPlayerEvent("BUFFERING", {
-                state: currentState,
-                stateString: this.getPlayerStateString(currentState),
-                detectedBy: "polling",
-                timestamp: new Date().toISOString()
-              });
-            }
-          }
-          
-          lastKnownState = currentState;
-        }
-      }
-    }, 500); // Check every 500ms for more responsive detection
   },
 
   // Set up reactive effect to control Cast player based on store changes
