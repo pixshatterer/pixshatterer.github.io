@@ -198,134 +198,16 @@ export const PlayerController = {
     this._impl?.addDebugMessage?.({
       type: "EVENT_LISTENERS_SETUP",
       data: {
-        PLAYER_STATE_CHANGED: !!EventType.PLAYER_STATE_CHANGED,
         TIME_UPDATE: !!EventType.TIME_UPDATE,
         ERROR: !!EventType.ERROR,
         BREAK_ENDED: !!EventType.BREAK_ENDED,
-        SEEK: !!EventType.SEEK
+        SEEK: !!EventType.SEEK,
+        PAUSE: !!EventType.PAUSE,
+        PLAY: !!EventType.PLAY,
+        BUFFERING: !!EventType.BUFFERING
       },
       source: "EVENT_SETUP",
     });
-
-    // Player state changes
-    if (EventType.PLAYER_STATE_CHANGED) {
-      this._impl?.addDebugMessage?.({
-        type: "PLAYER_STATE_LISTENER_ADDED",
-        data: { 
-          eventTypeExists: !!EventType.PLAYER_STATE_CHANGED,
-          playerManagerExists: !!playerManager,
-          timestamp: new Date().toISOString()
-        },
-        source: "EVENT_SETUP",
-      });
-
-      playerManager.addEventListener(EventType.PLAYER_STATE_CHANGED, (event) => {
-        // Enhanced debugging for all state changes
-        this._impl?.addDebugMessage?.({
-          type: "PLAYER_STATE_CHANGED",
-          data: { 
-            playerState: event.playerState,
-            playerStateString: this.getPlayerStateString(event.playerState),
-            timestamp: new Date().toISOString(),
-            eventObject: {
-              type: event.type,
-              target: !!event.target
-            }
-          },
-          source: "CAF_EVENT",
-        });
-
-        // Send player state change to senders
-        this.sendPlayerEvent("STATE_CHANGED", {
-          playerState: event.playerState,
-          playerStateString: this.getPlayerStateString(event.playerState),
-          timestamp: new Date().toISOString()
-        });
-
-        // When media starts playing, capture the actual media session info
-        if (event.playerState === cast.framework.messages.PlayerState.PLAYING) {
-          this._impl?.addDebugMessage?.({
-            type: "PLAYING_STATE_DETECTED",
-            data: { action: "Setting isPlaying to true" },
-            source: "STATE_HANDLER",
-          });
-          
-          this.updatePlayback({ isPlaying: true });
-          
-          // Capture actual media session information only if it exists
-          const mediaSession = playerManager.getMediaSession();
-          if (mediaSession?.media) {
-            const mediaInfo = {
-              contentId: mediaSession.media.contentId,
-              contentType: mediaSession.media.contentType,
-              streamType: mediaSession.media.streamType,
-              duration: mediaSession.media.duration,
-              title: mediaSession.media.metadata?.title,
-              subtitle: mediaSession.media.metadata?.subtitle,
-              hasMetadata: !!mediaSession.media.metadata,
-              metadataType: mediaSession.media.metadata?.metadataType,
-              customData: mediaSession.media.customData,
-              sessionId: mediaSession.sessionId,
-              mediaSessionId: mediaSession.mediaSessionId
-            };
-
-            this._impl?.addDebugMessage?.({
-              type: "MEDIA_SESSION_INFO",
-              data: mediaInfo,
-              source: "MEDIA_SESSION",
-            });
-
-            // Send media started event to senders
-            this.sendPlayerEvent("MEDIA_STARTED", {
-              mediaInfo: {
-                contentId: mediaSession.media.contentId,
-                contentType: mediaSession.media.contentType,
-                streamType: mediaSession.media.streamType,
-                duration: mediaSession.media.duration,
-                title: mediaSession.media.metadata?.title
-              }
-            });
-          }
-        } else if (event.playerState === cast.framework.messages.PlayerState.PAUSED) {
-          this._impl?.addDebugMessage?.({
-            type: "PAUSED_STATE_DETECTED",
-            data: { 
-              action: "Setting isPlaying to false",
-              currentTime: videoStore.currentTime,
-              pauseEventReceived: true
-            },
-            source: "STATE_HANDLER",
-          });
-          
-          this.updatePlayback({ isPlaying: false });
-          
-          // Send paused event to senders
-          this.sendPlayerEvent("MEDIA_PAUSED", {
-            currentTime: videoStore.currentTime,
-            timestamp: new Date().toISOString()
-          });
-          
-          this._impl?.addDebugMessage?.({
-            type: "PAUSE_EVENT_SENT_TO_SENDER",
-            data: { 
-              currentTime: videoStore.currentTime,
-              success: true
-            },
-            source: "STATE_HANDLER",
-          });
-        } else {
-          // Log any other state changes
-          this._impl?.addDebugMessage?.({
-            type: "OTHER_STATE_CHANGE",
-            data: { 
-              playerState: event.playerState,
-              playerStateString: this.getPlayerStateString(event.playerState)
-            },
-            source: "STATE_HANDLER",
-          });
-        }
-      });
-    }
 
     // Time updates
     if (EventType.TIME_UPDATE) {
@@ -385,6 +267,76 @@ export const PlayerController = {
           currentTime: event.currentTime,
           resumeState: event.resumeState,
           detectMethod: "SEEK_EVENT",
+          timestamp: new Date().toISOString()
+        });
+      });
+    }
+
+    // Dedicated PAUSE event listener
+    if (EventType.PAUSE) {
+      playerManager.addEventListener(EventType.PAUSE, (event) => {
+        this._impl?.addDebugMessage?.({
+          type: "PAUSE_EVENT_DETECTED",
+          data: { 
+            currentTime: videoStore.currentTime,
+            eventType: event.type,
+            timestamp: new Date().toISOString()
+          },
+          source: "CAF_EVENT",
+        });
+        
+        this.updatePlayback({ isPlaying: false });
+        
+        // Send pause event to senders
+        this.sendPlayerEvent("PAUSED", {
+          currentTime: videoStore.currentTime,
+          detectedBy: "pause_event",
+          timestamp: new Date().toISOString()
+        });
+      });
+    }
+
+    // Dedicated PLAY event listener
+    if (EventType.PLAY) {
+      playerManager.addEventListener(EventType.PLAY, (event) => {
+        this._impl?.addDebugMessage?.({
+          type: "PLAY_EVENT_DETECTED",
+          data: { 
+            currentTime: videoStore.currentTime,
+            eventType: event.type,
+            timestamp: new Date().toISOString()
+          },
+          source: "CAF_EVENT",
+        });
+        
+        this.updatePlayback({ isPlaying: true });
+        
+        // Send play/resume event to senders
+        this.sendPlayerEvent("RESUMED", {
+          currentTime: videoStore.currentTime,
+          detectedBy: "play_event",
+          timestamp: new Date().toISOString()
+        });
+      });
+    }
+
+    // Dedicated BUFFERING event listener
+    if (EventType.BUFFERING) {
+      playerManager.addEventListener(EventType.BUFFERING, (event) => {
+        this._impl?.addDebugMessage?.({
+          type: "BUFFERING_EVENT_DETECTED",
+          data: { 
+            currentTime: videoStore.currentTime,
+            eventType: event.type,
+            timestamp: new Date().toISOString()
+          },
+          source: "CAF_EVENT",
+        });
+        
+        // Send buffering event to senders
+        this.sendPlayerEvent("BUFFERING", {
+          currentTime: videoStore.currentTime,
+          detectedBy: "buffering_event",
           timestamp: new Date().toISOString()
         });
       });
@@ -461,60 +413,6 @@ export const PlayerController = {
       },
       source: "EVENT_SETUP",
     });
-
-    // Set up periodic state checking as fallback for unreliable events
-    let lastKnownState = null;
-    setInterval(() => {
-      if (playerManager) {
-        const currentState = playerManager.getPlayerState();
-        if (currentState !== lastKnownState) {
-          this._impl?.addDebugMessage?.({
-            type: "STATE_CHANGE_DETECTED_BY_POLLING",
-            data: {
-              previousState: lastKnownState,
-              previousStateString: lastKnownState ? this.getPlayerStateString(lastKnownState) : "null",
-              currentState: currentState,
-              currentStateString: this.getPlayerStateString(currentState),
-              timestamp: new Date().toISOString()
-            },
-            source: "POLLING_FALLBACK",
-          });
-
-          // Since events aren't firing reliably, use polling to send notifications
-          if (lastKnownState !== null) { // Skip first state detection
-            // Handle pause/play state changes
-            if (currentState === cast.framework.messages.PlayerState.PAUSED && 
-                lastKnownState === cast.framework.messages.PlayerState.PLAYING) {
-              this.sendPlayerEvent("PAUSED", {
-                state: currentState,
-                stateString: this.getPlayerStateString(currentState),
-                detectedBy: "polling",
-                timestamp: new Date().toISOString()
-              });
-              this.updatePlayback({ isPlaying: false });
-            } else if (currentState === cast.framework.messages.PlayerState.PLAYING && 
-                       lastKnownState === cast.framework.messages.PlayerState.PAUSED) {
-              this.sendPlayerEvent("RESUMED", {
-                state: currentState,
-                stateString: this.getPlayerStateString(currentState),
-                detectedBy: "polling",
-                timestamp: new Date().toISOString()
-              });
-              this.updatePlayback({ isPlaying: true });
-            } else if (currentState === cast.framework.messages.PlayerState.BUFFERING) {
-              this.sendPlayerEvent("BUFFERING", {
-                state: currentState,
-                stateString: this.getPlayerStateString(currentState),
-                detectedBy: "polling",
-                timestamp: new Date().toISOString()
-              });
-            }
-          }
-          
-          lastKnownState = currentState;
-        }
-      }
-    }, 500); // Check every 500ms for more responsive detection
   },
 
   // Set up reactive effect to control Cast player based on store changes
