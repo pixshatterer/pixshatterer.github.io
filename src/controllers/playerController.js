@@ -359,7 +359,6 @@ export const PlayerController = {
           errorDetails.possibleCauses = [
             "Invalid or unreachable URL",
             "CORS configuration issues", 
-            "DRM license server problems",
             "Unsupported media format/codec",
             "Network connectivity issues"
           ];
@@ -369,8 +368,7 @@ export const PlayerController = {
             errorDetails.mediaInfo = {
               contentId: mediaSession.media.contentId,
               contentType: mediaSession.media.contentType,
-              streamType: mediaSession.media.streamType,
-              hasDRM: !!mediaSession.media.customData?.drm
+              streamType: mediaSession.media.streamType
             };
           }
         }
@@ -429,7 +427,6 @@ export const PlayerController = {
       const contentType = videoStore.contentType;
       const isLive = videoStore.isLive;
       const streamType = videoStore.streamType;
-      const drm = videoStore.drm;
 
           // Debug the entire videoStore state via overlay
           this._impl?.addDebugMessage?.({
@@ -454,8 +451,7 @@ export const PlayerController = {
             title,
             contentType,
             isLive,
-            streamType,
-            hasDRM: drm.enabled
+            streamType
           },
           source: "REACTIVE_CONTROL",
         });
@@ -468,24 +464,6 @@ export const PlayerController = {
           
           // Use streamType from store instead of calculating it here
           mediaInfo.streamType = streamType;
-
-          // Add DRM configuration if enabled
-          if (drm.enabled && drm.licenseUrl) {
-            const drmConfig = {};
-            if (drm.keySystem === "com.widevine.alpha" || !drm.keySystem) {
-              drmConfig.widevine = {
-                licenseUrl: drm.licenseUrl,
-                headers: drm.headers || {}
-              };
-            }
-            
-            if (Object.keys(drmConfig).length > 0) {
-              mediaInfo.customData = {
-                ...mediaInfo.customData,
-                drm: drmConfig
-              };
-            }
-          }
 
           // Add metadata if available
           if (title) {
@@ -556,8 +534,7 @@ export const PlayerController = {
               contentType,
               isLive,
               streamType: mediaInfo.streamType,
-              streamTypeText: streamType === cast.framework.messages.StreamType.LIVE ? "LIVE" : "BUFFERED",
-              hasDRM: drm.enabled
+              streamTypeText: streamType === cast.framework.messages.StreamType.LIVE ? "LIVE" : "BUFFERED"
             },
             source: "PLAYER_CONTROLLER",
           });

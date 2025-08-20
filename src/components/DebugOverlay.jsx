@@ -6,11 +6,14 @@ export default function DebugOverlay() {
   // Create reactive computed values for the arrays to ensure proper updates
   const recentMessages = createMemo(() => videoStore.debug.messages.slice(0, 5));
   const recentErrors = createMemo(() => videoStore.debug.errors.slice(0, 3));
+  
+  // Static timestamp for when the component was created
+  const initialTime = new Date().toLocaleTimeString();
 
   return (
     <div class="debug-overlay">
       <div class="debug-header">
-        <span class="debug-title">Cast Receiver Debug</span>
+        <span class="debug-title">Cast Receiver Debug - {initialTime}</span>
         <div class="debug-indicators">
           <span class={`debug-indicator ${videoStore.debug.messageCount > 0 ? 'has-data' : ''}`}>
             📨 {videoStore.debug.messageCount}

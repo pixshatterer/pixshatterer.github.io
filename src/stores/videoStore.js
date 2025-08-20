@@ -8,13 +8,6 @@ export const [videoStore, setVideoStore] = createStore({
   streamType: null, // Will be set based on isLive value
   isPlaying: false,
   currentTime: 0,
-  // DRM configuration
-  drm: {
-    licenseUrl: "",
-    keySystem: "", // e.g., "com.widevine.alpha", "com.microsoft.playready"
-    headers: {},   // Additional headers for license requests
-    enabled: false
-  },
   // Debug information
   debug: {
     messages: [],
@@ -27,26 +20,13 @@ export const [videoStore, setVideoStore] = createStore({
 });
 
 export const videoActions = {
-  loadStream({ url, title, contentType, isLive, drm, streamType }) {
-    const drmConfig = drm ? {
-      licenseUrl: drm.licenseUrl || "",
-      keySystem: drm.keySystem || "com.widevine.alpha",
-      headers: drm.headers || {},
-      enabled: !!(drm.licenseUrl)
-    } : {
-      licenseUrl: "",
-      keySystem: "",
-      headers: {},
-      enabled: false
-    };
-
+  loadStream({ url, title, contentType, isLive, streamType }) {
     setVideoStore({ 
       url, 
       title, 
       contentType,
       isLive,
-      streamType, // streamType is now passed from the caller
-      drm: drmConfig
+      streamType // streamType is now passed from the caller
     });
   },
   updatePlayback(partial) {
@@ -60,12 +40,6 @@ export const videoActions = {
       isPlaying: false,
       currentTime: 0,
       streamType: null,
-      drm: {
-        licenseUrl: "",
-        keySystem: "",
-        headers: {},
-        enabled: false
-      },
       debug: {
         messages: [],
         errors: [],

@@ -170,8 +170,7 @@ export async function initializeCastReceiver() {
             title: title,
             contentType: streamData.contentType || "application/dash+xml",
             isLive: isLive,
-            streamType: streamType,
-            drm: streamData.drm || null,
+            streamType: streamType
           });
 
           PlayerController._impl?.addDebugMessage?.({
