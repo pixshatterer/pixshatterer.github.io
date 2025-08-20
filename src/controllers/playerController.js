@@ -6,16 +6,21 @@ let castContext = null;
 
 export const PlayerController = {
   _impl: videoActions,
-  
+
   // Helper function to convert player state to readable string
   getPlayerStateString(playerState) {
     const states = cast.framework.messages.PlayerState;
     switch (playerState) {
-      case states.IDLE: return "IDLE";
-      case states.PLAYING: return "PLAYING";
-      case states.PAUSED: return "PAUSED";
-      case states.BUFFERING: return "BUFFERING";
-      default: return `UNKNOWN(${playerState})`;
+      case states.IDLE:
+        return "IDLE";
+      case states.PLAYING:
+        return "PLAYING";
+      case states.PAUSED:
+        return "PAUSED";
+      case states.BUFFERING:
+        return "BUFFERING";
+      default:
+        return `UNKNOWN(${playerState})`;
     }
   },
 
@@ -27,7 +32,7 @@ export const PlayerController = {
         eventType,
         eventData,
         hasData: !!eventData,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
       source: "EVENT_SENDER",
     });
@@ -41,8 +46,8 @@ export const PlayerController = {
         url: videoStore.url,
         title: videoStore.title,
         isLive: videoStore.isLive,
-        streamType: videoStore.streamType
-      }
+        streamType: videoStore.streamType,
+      },
     });
 
     this._impl?.addDebugMessage?.({
@@ -50,7 +55,7 @@ export const PlayerController = {
       data: {
         eventType,
         success,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
       source: "EVENT_SENDER",
     });
@@ -61,19 +66,21 @@ export const PlayerController = {
   // Get current player state for debugging
   getCurrentPlayerState() {
     if (!castContext) return null;
-    
+
     const playerManager = castContext.getPlayerManager();
     if (!playerManager) return null;
-    
+
     const mediaSession = playerManager.getMediaSession();
-    
+
     const currentState = {
       playerState: playerManager.getPlayerState(),
-      playerStateString: this.getPlayerStateString(playerManager.getPlayerState()),
+      playerStateString: this.getPlayerStateString(
+        playerManager.getPlayerState()
+      ),
       hasMediaSession: !!mediaSession,
       mediaSessionId: mediaSession?.mediaSessionId,
       contentId: mediaSession?.media?.contentId,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     this._impl?.addDebugMessage?.({
@@ -88,23 +95,23 @@ export const PlayerController = {
   // Initialize the controller with Cast context
   initialize(context) {
     castContext = context;
-    this.setupQualityOptimization();
+    this.setupPlayerConfig();
     this.setupReactivePlayerControl();
     this.setupPlayerEventListeners();
-    
+
     this._impl?.addDebugMessage?.({
       type: "CONTROLLER_INITIALIZED",
       data: {
         hasQualityOptimization: true,
         hasReactiveControl: true,
-        hasEventListeners: true
+        hasEventListeners: true,
       },
       source: "PLAYER_CONTROLLER",
     });
   },
 
   // Set up quality optimization for better video quality
-  setupQualityOptimization() {
+  setupPlayerConfig() {
     if (!castContext) return;
 
     const playerManager = castContext.getPlayerManager();
@@ -112,152 +119,69 @@ export const PlayerController = {
 
     // Configure player for better quality
     if (playerManager.setMediaPlaybackInfoHandler) {
-      playerManager.setMediaPlaybackInfoHandler((_, mediaPlaybackInfo) => {
-        this._impl?.addDebugMessage?.({
-          type: "PLAYBACK_INFO_HANDLER",
-          data: {
-            supportedCommands: mediaPlaybackInfo.supportedMediaCommands,
-            action: "Setting media playback info for quality optimization"
-          },
-          source: "QUALITY_OPTIMIZATION",
-        });
-        
-        // Request higher quality by default
-        if (mediaPlaybackInfo.supportedMediaCommands) {
-          mediaPlaybackInfo.supportedMediaCommands |= cast.framework.messages.Command.STREAM_VOLUME;
-        }
-        
-        // Log quality configuration
-        this._impl?.addDebugMessage?.({
-          type: "QUALITY_CONFIG",
-          data: {
-            preferredBitrate: "8Mbps",
-            maxBitrate: "25Mbps",
-            adaptiveBitrate: true
-          },
-          source: "PLAYER_CONTROLLER",
-        });
-
-        return mediaPlaybackInfo;
-      });
-    }
-
-    // Set up load interceptor for quality optimization and DRM
-    if (playerManager.setMessageInterceptor) {
-      playerManager.setMessageInterceptor(
-        cast.framework.messages.MessageType.LOAD,
-        (request) => {
-          this._impl?.addDebugMessage?.({
-            type: "LOAD_INTERCEPTOR",
-            data: {
-              action: "Intercepting LOAD request for quality optimization and DRM",
-              originalContentType: request.media?.contentType,
-              originalStreamType: request.media?.streamType,
-              hasCustomData: !!request.media?.customData
-            },
-            source: "LOAD_INTERCEPTOR",
-          });
+      playerManager.setMediaPlaybackInfoHandler(
+        (loadReq, mediaPlaybackInfo) => {
+          // Read sender-provided customData if you have it:
+          const drm = loadReq.media?.customData?.drm || {};
           
-          // 1. Handle DRM Configuration using CAF PlaybackConfig API
-          const customData = request.media?.customData;
-          const drmConfig = customData?.drm;
-          
-          if (drmConfig?.servers && typeof drmConfig.servers === 'object') {
-            // Check if DRM is already configured to avoid redundant operations
-            if (videoStore.drm.isConfigured) {
-              this._impl?.addDebugMessage?.({
-                type: "DRM_ALREADY_CONFIGURED",
-                data: {
-                  action: "Skipping DRM configuration - already set",
-                  existingSystems: videoStore.drm.systems,
-                  existingLicenseUrl: videoStore.drm.licenseUrl,
-                  configuredAt: videoStore.drm.configuredAt
-                },
-                source: "LOAD_INTERCEPTOR",
-              });
-              
-              // Still proceed with the rest of the load process but skip DRM config
-            } else {
-              try {
-                // Configure DRM using CAF PlaybackConfig
-                const playbackConfig = new cast.framework.PlaybackConfig();
-                
-                // Set up DRM configuration for each key system
-                const configuredSystems = [];
-                let configuredLicenseUrl = null;
-                
-                Object.keys(drmConfig.servers).forEach(keySystem => {
-                  const licenseUrl = drmConfig.servers[keySystem];
-                  
-                  if (keySystem === "com.widevine.alpha") {
-                    playbackConfig.licenseUrl = licenseUrl;
-                    configuredLicenseUrl = licenseUrl;
-                    configuredSystems.push(keySystem);
-                    
-                    // Add license request headers if present
-                    if (drmConfig.headers && Object.keys(drmConfig.headers).length > 0) {
-                      playbackConfig.licenseRequestHandler = (requestInfo) => {
-                        // Add custom headers to license request
-                        Object.keys(drmConfig.headers).forEach(headerName => {
-                          requestInfo.headers[headerName] = drmConfig.headers[headerName];
-                        });
-                        return requestInfo;
-                      };
-                    }
-                  }
-                });
-                
-                // Apply playback config to the request
-                request.playbackConfig = playbackConfig;
+          if (drm.licenseUrl) {
+            mediaPlaybackInfo.licenseUrl = drm.licenseUrl;
+            mediaPlaybackInfo.protectionSystem =
+              cast.framework.ContentProtection.WIDEVINE;
+            mediaPlaybackInfo.licenseRequestHandler = (req) => {
+              req.headers = { ...(req.headers || {}), ...(drm.headers || {}) };
+              if (drm.withCredentials) req.withCredentials = true;
+            };
 
-                // Verify DRM configuration was set via CAF before updating status
-                if (playbackConfig.licenseUrl && configuredSystems.length > 0) {
-                  // Set DRM status in store after successful CAF configuration
-                  this._impl?.setDrmStatus?.({
-                    systems: configuredSystems,
-                    licenseUrl: configuredLicenseUrl,
-                    hasHeaders: !!(drmConfig.headers && Object.keys(drmConfig.headers).length > 0)
-                  });
+            // Update DRM status in store for debug overlay
+            this._impl?.setDrmStatus?.({
+              systems: ['com.widevine.alpha'],
+              licenseUrl: drm.licenseUrl,
+              hasHeaders: !!(drm.headers && Object.keys(drm.headers).length > 0)
+            });
 
-                  this._impl?.addDebugMessage?.({
-                    type: "DRM_CONFIGURED_VIA_PLAYBACK_CONFIG",
-                    data: {
-                      supportedSystems: configuredSystems,
-                      hasHeaders: !!(drmConfig.headers && Object.keys(drmConfig.headers).length > 0),
-                      licenseUrl: configuredLicenseUrl,
-                      cafVerified: true
-                    },
-                    source: "LOAD_INTERCEPTOR",
-                  });
-                } else {
-                  this._impl?.addDebugError?.({
-                    message: "DRM configuration failed CAF verification",
-                    data: {
-                      playbackConfigLicenseUrl: playbackConfig.licenseUrl,
-                      configuredSystemsCount: configuredSystems.length,
-                      drmConfig
-                    },
-                    source: "LOAD_INTERCEPTOR",
-                  });
-                }
-
-              } catch (error) {
-                this._impl?.addDebugError?.({
-                  message: "Failed to configure DRM via PlaybackConfig",
-                  data: {
-                    error: error.message || error,
-                    drmConfig
-                  },
-                  source: "LOAD_INTERCEPTOR",
-                });
-              }
-            }
+            this._impl?.addDebugMessage?.({
+              type: "DRM_CONFIG",
+              data: {
+                license: drm.licenseUrl,
+                hasHeaders: !!(drm.headers && Object.keys(drm.headers).length > 0),
+                withCredentials: !!drm.withCredentials
+              },
+              source: "DRM_CONFIG",
+            });
           } else {
             // Clear DRM status if no DRM config present
             this._impl?.clearDrmStatus?.();
           }
-          
-          // 2. Handle Quality Optimization
+
+          // Request higher quality by default
+          if (mediaPlaybackInfo.supportedMediaCommands) {
+            mediaPlaybackInfo.supportedMediaCommands |=
+              cast.framework.messages.Command.STREAM_VOLUME;
+          }
+
+          // Log quality configuration
+          this._impl?.addDebugMessage?.({
+            type: "QUALITY_CONFIG",
+            data: {
+              preferredBitrate: "8Mbps",
+              maxBitrate: "25Mbps",
+              adaptiveBitrate: true,
+            },
+            source: "PLAYER_CONTROLLER",
+          });
+
+          return mediaPlaybackInfo;
+        }
+      );
+    }
+
+    // Set up load interceptor for quality optimization
+    if (playerManager.setMessageInterceptor) {
+      playerManager.setMessageInterceptor(
+        cast.framework.messages.MessageType.LOAD,
+        (request) => {
+          // Handle Quality Optimization
           if (request.media) {
             request.media.customData = {
               ...request.media.customData,
@@ -265,18 +189,18 @@ export const PlayerController = {
                 preferHigherBitrate: true,
                 adaptiveBitrate: true,
                 targetBitrate: 8000000, // 8 Mbps
-                maxBitrate: 25000000    // 25 Mbps
-              }
+                maxBitrate: 25000000, // 25 Mbps
+              },
             };
           }
 
           this._impl?.addDebugMessage?.({
             type: "LOAD_INTERCEPTED",
             data: {
-              hasQualityPreferences: !!request.media?.customData?.qualityPreferences,
-              hasDrmConfig: !!drmConfig?.servers,
+              hasQualityPreferences:
+                !!request.media?.customData?.qualityPreferences,
               contentType: request.media?.contentType,
-              streamType: request.media?.streamType
+              streamType: request.media?.streamType,
             },
             source: "LOAD_INTERCEPTOR",
           });
@@ -305,7 +229,7 @@ export const PlayerController = {
         SEEK: !!EventType.SEEK,
         PAUSE: !!EventType.PAUSE,
         PLAY: !!EventType.PLAY,
-        BUFFERING: !!EventType.BUFFERING
+        BUFFERING: !!EventType.BUFFERING,
       },
       source: "EVENT_SETUP",
     });
@@ -314,11 +238,11 @@ export const PlayerController = {
     if (EventType.TIME_UPDATE) {
       let lastReportedTime = 0;
       const seekDetectionThreshold = 5; // seconds - if time jumps more than this, consider it a seek
-      
+
       playerManager.addEventListener(EventType.TIME_UPDATE, (event) => {
         const currentTime = event.currentMediaTime || 0;
         const timeDifference = Math.abs(currentTime - lastReportedTime);
-        
+
         // Detect seek operations (large time jumps)
         if (lastReportedTime > 0 && timeDifference > seekDetectionThreshold) {
           this._impl?.addDebugMessage?.({
@@ -327,7 +251,7 @@ export const PlayerController = {
               previousTime: lastReportedTime,
               newTime: currentTime,
               timeDifference: timeDifference,
-              threshold: seekDetectionThreshold
+              threshold: seekDetectionThreshold,
             },
             source: "TIME_UPDATE",
           });
@@ -338,14 +262,14 @@ export const PlayerController = {
             newTime: currentTime,
             timeDifference: timeDifference,
             detectMethod: "TIME_JUMP",
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
           });
         }
-        
+
         this.updatePlayback({
           currentTime: currentTime,
         });
-        
+
         lastReportedTime = currentTime;
       });
     }
@@ -358,7 +282,7 @@ export const PlayerController = {
           data: {
             currentTime: event.currentTime,
             resumeState: event.resumeState,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
           },
           source: "CAF_EVENT",
         });
@@ -368,7 +292,7 @@ export const PlayerController = {
           currentTime: event.currentTime,
           resumeState: event.resumeState,
           detectMethod: "SEEK_EVENT",
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       });
     }
@@ -378,21 +302,21 @@ export const PlayerController = {
       playerManager.addEventListener(EventType.PAUSE, (event) => {
         this._impl?.addDebugMessage?.({
           type: "PAUSE_EVENT_DETECTED",
-          data: { 
+          data: {
             currentTime: videoStore.currentTime,
             eventType: event.type,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
           },
           source: "CAF_EVENT",
         });
-        
+
         this.updatePlayback({ isPlaying: false });
-        
+
         // Send pause event to senders
         this.sendPlayerEvent("PAUSED", {
           currentTime: videoStore.currentTime,
           detectedBy: "pause_event",
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       });
     }
@@ -402,21 +326,21 @@ export const PlayerController = {
       playerManager.addEventListener(EventType.PLAY, (event) => {
         this._impl?.addDebugMessage?.({
           type: "PLAY_EVENT_DETECTED",
-          data: { 
+          data: {
             currentTime: videoStore.currentTime,
             eventType: event.type,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
           },
           source: "CAF_EVENT",
         });
-        
+
         this.updatePlayback({ isPlaying: true });
-        
+
         // Send play/resume event to senders
         this.sendPlayerEvent("RESUMED", {
           currentTime: videoStore.currentTime,
           detectedBy: "play_event",
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       });
     }
@@ -426,19 +350,19 @@ export const PlayerController = {
       playerManager.addEventListener(EventType.BUFFERING, (event) => {
         this._impl?.addDebugMessage?.({
           type: "BUFFERING_EVENT_DETECTED",
-          data: { 
+          data: {
             currentTime: videoStore.currentTime,
             eventType: event.type,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
           },
           source: "CAF_EVENT",
         });
-        
+
         // Send buffering event to senders
         this.sendPlayerEvent("BUFFERING", {
           currentTime: videoStore.currentTime,
           detectedBy: "buffering_event",
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       });
     }
@@ -451,7 +375,7 @@ export const PlayerController = {
           detailedErrorCode: event.detailedErrorCode,
           reason: event.reason,
           mediaSessionId: event.mediaSessionId,
-          source: "CAF_ERROR"
+          source: "CAF_ERROR",
         };
 
         // Specific handling for 905 (LOAD_FAILED) errors
@@ -459,23 +383,25 @@ export const PlayerController = {
           errorDetails.analysis = "LOAD_FAILED (905): Media failed to load";
           errorDetails.possibleCauses = [
             "Invalid or unreachable URL",
-            "CORS configuration issues", 
+            "CORS configuration issues",
             "Unsupported media format/codec",
-            "Network connectivity issues"
+            "Network connectivity issues",
           ];
-          
+
           const mediaSession = playerManager.getMediaSession();
           if (mediaSession?.media) {
             errorDetails.mediaInfo = {
               contentId: mediaSession.media.contentId,
               contentType: mediaSession.media.contentType,
-              streamType: mediaSession.media.streamType
+              streamType: mediaSession.media.streamType,
             };
           }
         }
 
         this._impl?.addDebugError?.({
-          message: `Player error ${event.error}: ${event.detailedErrorCode || 'Unknown'}`,
+          message: `Player error ${event.error}: ${
+            event.detailedErrorCode || "Unknown"
+          }`,
           data: errorDetails,
           source: "CAF_ERROR",
         });
@@ -486,7 +412,7 @@ export const PlayerController = {
           detailedErrorCode: event.detailedErrorCode,
           reason: event.reason,
           analysis: errorDetails.analysis,
-          possibleCauses: errorDetails.possibleCauses
+          possibleCauses: errorDetails.possibleCauses,
         });
       });
     }
@@ -508,7 +434,7 @@ export const PlayerController = {
       data: {
         playerManagerExists: !!playerManager,
         setupComplete: true,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
       source: "EVENT_SETUP",
     });
@@ -529,20 +455,20 @@ export const PlayerController = {
       const isLive = videoStore.isLive;
       const streamType = videoStore.streamType;
 
-          // Debug the entire videoStore state via overlay
-          this._impl?.addDebugMessage?.({
-            type: "STORE_STATE_DEBUG",
-            data: {
-              url: videoStore.url,
-              title: videoStore.title,
-              contentType: videoStore.contentType,
-              isLive: videoStore.isLive,
-              streamType: videoStore.streamType,
-              isLiveType: typeof videoStore.isLive,
-              isLiveValue: JSON.stringify(videoStore.isLive)
-            },
-            source: "REACTIVE_DEBUG",
-          });
+      // Debug the entire videoStore state via overlay
+      this._impl?.addDebugMessage?.({
+        type: "STORE_STATE_DEBUG",
+        data: {
+          url: videoStore.url,
+          title: videoStore.title,
+          contentType: videoStore.contentType,
+          isLive: videoStore.isLive,
+          streamType: videoStore.streamType,
+          isLiveType: typeof videoStore.isLive,
+          isLiveValue: JSON.stringify(videoStore.isLive),
+        },
+        source: "REACTIVE_DEBUG",
+      });
 
       if (url?.trim()) {
         this._impl?.addDebugMessage?.({
@@ -552,7 +478,7 @@ export const PlayerController = {
             title,
             contentType,
             isLive,
-            streamType
+            streamType,
           },
           source: "REACTIVE_CONTROL",
         });
@@ -562,23 +488,27 @@ export const PlayerController = {
           const mediaInfo = new cast.framework.messages.MediaInformation();
           mediaInfo.contentId = url;
           mediaInfo.contentType = contentType || "application/dash+xml";
-          
+
           // Use streamType from store instead of calculating it here
           mediaInfo.streamType = streamType;
 
           // Add metadata if available
           if (title) {
-            mediaInfo.metadata = new cast.framework.messages.GenericMediaMetadata();
+            mediaInfo.metadata =
+              new cast.framework.messages.GenericMediaMetadata();
             mediaInfo.metadata.title = title;
-            mediaInfo.metadata.subtitle = `${isLive ? 'LIVE' : 'VOD'} Stream`;
-            
+            mediaInfo.metadata.subtitle = `${isLive ? "LIVE" : "VOD"} Stream`;
+
             // Add additional metadata for better display
-            mediaInfo.metadata.images = [{
-              url: "https://via.placeholder.com/480x270/000000/FFFFFF?text=Video"
-            }];
+            mediaInfo.metadata.images = [
+              {
+                url: "https://via.placeholder.com/480x270/000000/FFFFFF?text=Video",
+              },
+            ];
           } else {
             // Even without title, provide basic metadata
-            mediaInfo.metadata = new cast.framework.messages.GenericMediaMetadata();
+            mediaInfo.metadata =
+              new cast.framework.messages.GenericMediaMetadata();
             mediaInfo.metadata.title = isLive ? "Live Stream" : "Video Stream";
             mediaInfo.metadata.subtitle = contentType || "Media Stream";
           }
@@ -590,7 +520,7 @@ export const PlayerController = {
               title: mediaInfo.metadata.title,
               subtitle: mediaInfo.metadata.subtitle,
               hasImages: !!mediaInfo.metadata.images,
-              metadataType: mediaInfo.metadata.metadataType
+              metadataType: mediaInfo.metadata.metadataType,
             },
             source: "METADATA_DEBUG",
           });
@@ -607,13 +537,13 @@ export const PlayerController = {
             maxBitrate: 25000000, // 25 Mbps
             qualityPreferences: {
               preferHigherBitrate: true,
-              adaptiveBitrate: true
-            }
+              adaptiveBitrate: true,
+            },
           };
 
           // Load the media
           playerManager.load(request);
-          
+
           // Debug the load completion
           this._impl?.addDebugMessage?.({
             type: "MEDIA_LOADED",
@@ -621,11 +551,11 @@ export const PlayerController = {
               success: true,
               url,
               streamType: mediaInfo.streamType,
-              isLiveFromStore: isLive
+              isLiveFromStore: isLive,
             },
             source: "REACTIVE_CONTROL",
           });
-          
+
           // Log debug message
           this._impl?.addDebugMessage?.({
             type: "REACTIVE_LOAD",
@@ -635,11 +565,13 @@ export const PlayerController = {
               contentType,
               isLive,
               streamType: mediaInfo.streamType,
-              streamTypeText: streamType === cast.framework.messages.StreamType.LIVE ? "LIVE" : "BUFFERED"
+              streamTypeText:
+                streamType === cast.framework.messages.StreamType.LIVE
+                  ? "LIVE"
+                  : "BUFFERED",
             },
             source: "PLAYER_CONTROLLER",
           });
-          
         } catch (error) {
           this._impl?.addDebugError?.({
             message: "Failed to load media reactively",
@@ -647,7 +579,7 @@ export const PlayerController = {
               error: error.message || error,
               url,
               isLive,
-              contentType
+              contentType,
             },
             source: "REACTIVE_CONTROL",
           });
@@ -660,15 +592,15 @@ export const PlayerController = {
     if (adapter && typeof adapter === "object") this._impl = adapter;
     return this;
   },
-  
+
   loadStream(payload) {
     return this._impl?.loadStream?.(payload);
   },
-  
+
   updatePlayback(partial) {
     return this._impl?.updatePlayback?.(partial);
   },
-  
+
   reset() {
     return this._impl?.reset?.();
   },
