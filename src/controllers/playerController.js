@@ -142,7 +142,7 @@ export const PlayerController = {
       });
     }
 
-    // Set up load interceptor for quality optimization
+    // Set up load interceptor for quality optimization and DRM
     if (playerManager.setMessageInterceptor) {
       playerManager.setMessageInterceptor(
         cast.framework.messages.MessageType.LOAD,
@@ -150,14 +150,114 @@ export const PlayerController = {
           this._impl?.addDebugMessage?.({
             type: "LOAD_INTERCEPTOR",
             data: {
-              action: "Intercepting LOAD request for quality optimization",
+              action: "Intercepting LOAD request for quality optimization and DRM",
               originalContentType: request.media?.contentType,
-              originalStreamType: request.media?.streamType
+              originalStreamType: request.media?.streamType,
+              hasCustomData: !!request.media?.customData
             },
-            source: "QUALITY_OPTIMIZATION",
+            source: "LOAD_INTERCEPTOR",
           });
           
-          // Enhance load request with quality preferences
+          // 1. Handle DRM Configuration using CAF PlaybackConfig API
+          const customData = request.media?.customData;
+          const drmConfig = customData?.drm;
+          
+          if (drmConfig?.servers && typeof drmConfig.servers === 'object') {
+            // Check if DRM is already configured to avoid redundant operations
+            if (videoStore.drm.isConfigured) {
+              this._impl?.addDebugMessage?.({
+                type: "DRM_ALREADY_CONFIGURED",
+                data: {
+                  action: "Skipping DRM configuration - already set",
+                  existingSystems: videoStore.drm.systems,
+                  existingLicenseUrl: videoStore.drm.licenseUrl,
+                  configuredAt: videoStore.drm.configuredAt
+                },
+                source: "LOAD_INTERCEPTOR",
+              });
+              
+              // Still proceed with the rest of the load process but skip DRM config
+            } else {
+              try {
+                // Configure DRM using CAF PlaybackConfig
+                const playbackConfig = new cast.framework.PlaybackConfig();
+                
+                // Set up DRM configuration for each key system
+                const configuredSystems = [];
+                let configuredLicenseUrl = null;
+                
+                Object.keys(drmConfig.servers).forEach(keySystem => {
+                  const licenseUrl = drmConfig.servers[keySystem];
+                  
+                  if (keySystem === "com.widevine.alpha") {
+                    playbackConfig.licenseUrl = licenseUrl;
+                    configuredLicenseUrl = licenseUrl;
+                    configuredSystems.push(keySystem);
+                    
+                    // Add license request headers if present
+                    if (drmConfig.headers && Object.keys(drmConfig.headers).length > 0) {
+                      playbackConfig.licenseRequestHandler = (requestInfo) => {
+                        // Add custom headers to license request
+                        Object.keys(drmConfig.headers).forEach(headerName => {
+                          requestInfo.headers[headerName] = drmConfig.headers[headerName];
+                        });
+                        return requestInfo;
+                      };
+                    }
+                  }
+                });
+                
+                // Apply playback config to the request
+                request.playbackConfig = playbackConfig;
+
+                // Verify DRM configuration was set via CAF before updating status
+                if (playbackConfig.licenseUrl && configuredSystems.length > 0) {
+                  // Set DRM status in store after successful CAF configuration
+                  this._impl?.setDrmStatus?.({
+                    systems: configuredSystems,
+                    licenseUrl: configuredLicenseUrl,
+                    hasHeaders: !!(drmConfig.headers && Object.keys(drmConfig.headers).length > 0)
+                  });
+
+                  this._impl?.addDebugMessage?.({
+                    type: "DRM_CONFIGURED_VIA_PLAYBACK_CONFIG",
+                    data: {
+                      supportedSystems: configuredSystems,
+                      hasHeaders: !!(drmConfig.headers && Object.keys(drmConfig.headers).length > 0),
+                      licenseUrl: configuredLicenseUrl,
+                      cafVerified: true
+                    },
+                    source: "LOAD_INTERCEPTOR",
+                  });
+                } else {
+                  this._impl?.addDebugError?.({
+                    message: "DRM configuration failed CAF verification",
+                    data: {
+                      playbackConfigLicenseUrl: playbackConfig.licenseUrl,
+                      configuredSystemsCount: configuredSystems.length,
+                      drmConfig
+                    },
+                    source: "LOAD_INTERCEPTOR",
+                  });
+                }
+
+              } catch (error) {
+                this._impl?.addDebugError?.({
+                  message: "Failed to configure DRM via PlaybackConfig",
+                  data: {
+                    error: error.message || error,
+                    drmConfig
+                  },
+                  source: "LOAD_INTERCEPTOR",
+                });
+              }
+            }
+          } else {
+            // Clear DRM status if no DRM config present
+            this._impl?.clearDrmStatus?.();
+          }
+          
+          // 2. Handle Quality Optimization
           if (request.media) {
             request.media.customData = {
               ...request.media.customData,
@@ -174,10 +274,11 @@ export const PlayerController = {
             type: "LOAD_INTERCEPTED",
             data: {
               hasQualityPreferences: !!request.media?.customData?.qualityPreferences,
+              hasDrmConfig: !!drmConfig?.servers,
               contentType: request.media?.contentType,
               streamType: request.media?.streamType
             },
-            source: "PLAYER_CONTROLLER",
+            source: "LOAD_INTERCEPTOR",
           });
 
           return request;

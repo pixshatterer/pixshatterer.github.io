@@ -21,6 +21,9 @@ export default function DebugOverlay() {
           <span class={`debug-indicator ${videoStore.debug.errorCount > 0 ? 'has-errors' : ''}`}>
             ❌ {videoStore.debug.errorCount}
           </span>
+          <span class={`debug-indicator ${videoStore.drm.isConfigured ? 'has-drm' : ''}`}>
+            🔒 {videoStore.drm.isConfigured ? 'DRM' : 'No DRM'}
+          </span>
         </div>
       </div>
 
@@ -41,6 +44,20 @@ export default function DebugOverlay() {
             <div class="debug-last-item error">
               <strong>Latest Error:</strong> {videoStore.debug.lastError.message}
               <span class="debug-timestamp">({videoStore.debug.lastError.timestamp})</span>
+            </div>
+          )}
+
+          {videoStore.drm.isConfigured && (
+            <div class="debug-last-item drm">
+              <strong>DRM Status:</strong> Configured
+              <div class="drm-details">
+                <div><strong>Systems:</strong> {videoStore.drm.systems.join(', ')}</div>
+                {videoStore.drm.licenseUrl && (
+                  <div><strong>License URL:</strong> {videoStore.drm.licenseUrl.substring(0, 50)}...</div>
+                )}
+                <div><strong>Headers:</strong> {videoStore.drm.hasHeaders ? 'Yes' : 'No'}</div>
+                <div><strong>Configured:</strong> {new Date(videoStore.drm.configuredAt).toLocaleTimeString()}</div>
+              </div>
             </div>
           )}
 

@@ -46,6 +46,11 @@
   background: #f44336;
 }
 
+.debug-indicator.has-drm {
+  background: #9C27B0;
+  color: white;
+}
+
 .debug-content {
   display: flex;
   flex-direction: column;
@@ -83,6 +88,21 @@
 .debug-last-item.error {
   background: #4a0e0e;
   color: #f44336;
+}
+
+.debug-last-item.drm {
+  background: #2e1a3a;
+  color: #9C27B0;
+}
+
+.drm-details {
+  margin-top: 4px;
+  font-size: 9px;
+  color: #bb86fc;
+}
+
+.drm-details div {
+  margin: 1px 0;
 }
 
 .debug-timestamp {
