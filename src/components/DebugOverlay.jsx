@@ -8,7 +8,7 @@ export default function DebugOverlay() {
   const recentErrors = createMemo(() => videoStore.debug.errors.slice(0, 3));
   
   // Static timestamp for when the component was created
-  const initialTime = new Date().toLocaleTimeString();
+  const initialTime = import.meta.__APP_VERSION__
 
   return (
     <div class="debug-overlay">

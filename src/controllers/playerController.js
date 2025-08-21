@@ -87,7 +87,6 @@ export const PlayerController = {
     this.setupPlayerConfig();
     this.setupReactivePlayerControl();
     this.setupPlayerEventListeners();
-
     this._impl?.addDebugMessage?.({
       type: "CONTROLLER_INITIALIZED",
       data: {
@@ -106,54 +105,15 @@ export const PlayerController = {
     const playerManager = castContext.getPlayerManager();
     if (!playerManager) return;
 
-    // Configure player for better quality
+    // Configure player for better quality (DRM config via customData removed)
     if (playerManager.setMediaPlaybackInfoHandler) {
       playerManager.setMediaPlaybackInfoHandler(
         (loadReq, mediaPlaybackInfo) => {
-          // Read sender-provided customData if you have it:
-          const drm = loadReq.media?.customData?.drm || {};
-
-          if (drm.licenseUrl) {
-            mediaPlaybackInfo.licenseUrl = drm.licenseUrl;
-            mediaPlaybackInfo.protectionSystem =
-              cast.framework.ContentProtection.WIDEVINE;
-            mediaPlaybackInfo.licenseRequestHandler = (req) => {
-              req.headers = { ...(req.headers || {}), ...(drm.headers || {}) };
-              if (drm.withCredentials) req.withCredentials = true;
-            };
-
-            // Update DRM status in store for debug overlay
-            this._impl?.setDrmStatus?.({
-              systems: ["com.widevine.alpha"],
-              licenseUrl: drm.licenseUrl,
-              hasHeaders: !!(
-                drm.headers && Object.keys(drm.headers).length > 0
-              ),
-            });
-
-            this._impl?.addDebugMessage?.({
-              type: "DRM_CONFIG",
-              data: {
-                license: drm.licenseUrl,
-                hasHeaders: !!(
-                  drm.headers && Object.keys(drm.headers).length > 0
-                ),
-                withCredentials: !!drm.withCredentials,
-              },
-              source: "DRM_CONFIG",
-            });
-          } else {
-            // Clear DRM status if no DRM config present
-            this._impl?.clearDrmStatus?.();
-          }
-
-          // Request higher quality by default
+          // Only handle quality config here
           if (mediaPlaybackInfo.supportedMediaCommands) {
             mediaPlaybackInfo.supportedMediaCommands |=
               cast.framework.messages.Command.STREAM_VOLUME;
           }
-
-          // Log quality configuration
           this._impl?.addDebugMessage?.({
             type: "QUALITY_CONFIG",
             data: {
@@ -163,12 +123,10 @@ export const PlayerController = {
             },
             source: "PLAYER_CONTROLLER",
           });
-
           return mediaPlaybackInfo;
         }
       );
     }
-
     // Set up load interceptor for quality optimization and entitlement check with retry, timeout, and CORS error reporting
     if (playerManager.setMessageInterceptor) {
       playerManager.setMessageInterceptor(
@@ -176,61 +134,6 @@ export const PlayerController = {
         async (request) => {
           // Entitlement URL check (block playback if not allowed)
           const entitlementUrl = request.media?.customData?.entitlementUrl;
-          if (entitlementUrl) {
-            const maxRetries = 2;
-            const timeoutMs = 4000;
-            let lastError = null;
-            for (let attempt = 0; attempt <= maxRetries; attempt++) {
-              try {
-                // Timeout wrapper for fetch
-                const controller = new AbortController();
-                const timeout = setTimeout(() => controller.abort(), timeoutMs);
-                let response;
-                try {
-                  response = await fetch(entitlementUrl, { method: "GET", signal: controller.signal });
-                } finally {
-                  clearTimeout(timeout);
-                }
-                if (!response.ok) {
-                  throw new Error(`Entitlement check failed: ${response.status} ${response.statusText}`);
-                }
-                this._impl?.addDebugMessage?.({
-                  type: "ENTITLEMENT_CHECK_SUCCESS",
-                  data: { entitlementUrl, status: response.status },
-                  source: "LOAD_INTERCEPTOR",
-                });
-                break; // Success, exit retry loop
-              } catch (err) {
-                lastError = err;
-                // Detect CORS error (AbortError or TypeError with no status)
-                let isCors = false;
-                let errorMsg = err.message || String(err);
-                if (err.name === 'AbortError') {
-                  errorMsg = `Entitlement check timed out after ${timeoutMs}ms`;
-                } else if (err instanceof TypeError && !('status' in err)) {
-                  isCors = true;
-                  errorMsg = 'CORS error: The entitlement server does not allow requests from this origin.';
-                }
-                this._impl?.addDebugError?.({
-                  message: errorMsg,
-                  data: { entitlementUrl, attempt: attempt + 1, isCors, error: err },
-                  source: "ENTITLEMENT_CHECK",
-                });
-                if (attempt === maxRetries) {
-                  sendMessageToSenders("ENTITLEMENT_ERROR", {
-                    entitlementUrl,
-                    error: errorMsg,
-                    isCors,
-                    message: isCors
-                      ? 'CORS error: The entitlement server does not allow requests from this origin.'
-                      : errorMsg
-                  });
-                  // Block playback by throwing error (CAF will not proceed)
-                  throw new Error(errorMsg);
-                }
-              }
-            }
-          }
 
           // Handle Quality Optimization
           if (request.media) {

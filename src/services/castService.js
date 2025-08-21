@@ -115,7 +115,22 @@ export async function initializeCastReceiver() {
     // Enable adaptive bitrate with quality preferences
     receiverOptions.playbackConfig.autoResumeDuration = 5;
     receiverOptions.playbackConfig.autoPauseDuration = null;
-
+    // Enable DRM settings
+    receiverOptions.playbackConfig.protectionSystem =
+      cast.framework.ContentProtection.WIDEVINE;
+    receiverOptions.playbackConfig.licenseUrl =
+      import.meta.env.VITE_LICENSE_URL;
+    // This handler runs for each LICENSE request
+    receiverOptions.playbackConfig.licenseRequestHandler = (requestInfo) => {
+      // Same as request.allowCrossSiteCredentials
+      requestInfo.withCredentials = true;
+      // Merge/override headers for the license POST
+      requestInfo.headers = {
+        ...(requestInfo.headers || {}),
+        "Content-Type": "application/octet-stream", // OK for Widevine license POST
+        restful: "yes", // your custom header
+      };
+    };
     // Add custom message listener BEFORE starting (required)
     castContext.addCustomMessageListener(NAMESPACE, (event) => {
       // Log debug message
@@ -131,46 +146,47 @@ export async function initializeCastReceiver() {
         try {
           // Validate and pass to PlayerController - no duplication
           const streamData = event.data.streamData;
-          // Extract title from customDat attribute
+          // Extract title from customData attribute
+          const customData = streamData?.customData || {};
           const title =
-            `${streamData?.customData?.title || ""}${
-              streamData?.customData?.episodeTitle
-                ? ` - ${streamData?.customData?.episodeTitle}`
-                : ""
-            }` || "Untitled Stream";
+            (customData.title || "") +
+            (customData.episodeTitle ? ` - ${customData.episodeTitle}` : "");
+          const finalTitle = title.trim() || "Untitled Stream";
 
           // Basic validation only
           if (!streamData?.url) {
             throw new Error("Stream URL is required");
           }
 
+          // Read isLive from customData (default to false if not present)
+          const isLive = customData.isLive ?? false;
+
           // Debug what we received
           PlayerController._impl?.addDebugMessage?.({
             type: "STREAM_DATA_RECEIVED",
             data: {
-              isLive: streamData.isLive,
-              isLiveType: typeof streamData.isLive,
-              isLiveValue: JSON.stringify(streamData.isLive),
+              isLive: isLive,
+              isLiveType: typeof isLive,
+              isLiveValue: JSON.stringify(isLive),
               url: streamData.url,
-              title: streamData.title,
+              title: finalTitle,
               contentType: streamData.contentType,
-              customData: streamData.customData,
+              customData: customData,
             },
             source: "CAST_MESSAGE",
           });
 
           // Let PlayerController handle all the logic reactively
-          const isLive = streamData.isLive || false;
           const streamType = isLive
             ? cast.framework.messages.StreamType.LIVE
             : cast.framework.messages.StreamType.BUFFERED;
 
           PlayerController.loadStream({
             url: streamData.url || "",
-            title: title,
+            title: finalTitle,
             contentType: streamData.contentType || "application/dash+xml",
             isLive: isLive,
-            streamType: streamType
+            streamType: streamType,
           });
 
           PlayerController._impl?.addDebugMessage?.({
@@ -194,7 +210,10 @@ export async function initializeCastReceiver() {
 
       PlayerController._impl?.addDebugMessage?.({
         type: "CAST_CONTEXT_STARTED",
-        data: { withCustomOptions: true },
+        data: {
+          options: JSON.stringify(receiverOptions, null, 2),
+          withCustomOptions: true,
+        },
         source: "CAST_SERVICE",
       });
     } catch (error) {
