@@ -26,17 +26,6 @@ export const PlayerController = {
 
   // Send player events to connected senders
   sendPlayerEvent(eventType, eventData) {
-    this._impl?.addDebugMessage?.({
-      type: "SENDING_PLAYER_EVENT",
-      data: {
-        eventType,
-        eventData,
-        hasData: !!eventData,
-        timestamp: new Date().toISOString(),
-      },
-      source: "EVENT_SENDER",
-    });
-
     const success = sendMessageToSenders("PLAYER_EVENT", {
       eventType,
       eventData,
@@ -123,7 +112,7 @@ export const PlayerController = {
         (loadReq, mediaPlaybackInfo) => {
           // Read sender-provided customData if you have it:
           const drm = loadReq.media?.customData?.drm || {};
-          
+
           if (drm.licenseUrl) {
             mediaPlaybackInfo.licenseUrl = drm.licenseUrl;
             mediaPlaybackInfo.protectionSystem =
@@ -135,17 +124,21 @@ export const PlayerController = {
 
             // Update DRM status in store for debug overlay
             this._impl?.setDrmStatus?.({
-              systems: ['com.widevine.alpha'],
+              systems: ["com.widevine.alpha"],
               licenseUrl: drm.licenseUrl,
-              hasHeaders: !!(drm.headers && Object.keys(drm.headers).length > 0)
+              hasHeaders: !!(
+                drm.headers && Object.keys(drm.headers).length > 0
+              ),
             });
 
             this._impl?.addDebugMessage?.({
               type: "DRM_CONFIG",
               data: {
                 license: drm.licenseUrl,
-                hasHeaders: !!(drm.headers && Object.keys(drm.headers).length > 0),
-                withCredentials: !!drm.withCredentials
+                hasHeaders: !!(
+                  drm.headers && Object.keys(drm.headers).length > 0
+                ),
+                withCredentials: !!drm.withCredentials,
               },
               source: "DRM_CONFIG",
             });
