@@ -168,6 +168,12 @@ export async function initializeCastReceiver() {
             sendMessageToSenders("LOAD_STREAM", { streamData });
             break;
           }
+          case "LOAD_ASSET": {
+            const assetData = data?.assetData || {}
+            PlayerController._impl?.loadAsset?.(assetData);
+            sendMessageToSenders("LOAD_ASSET", { assetData });
+            break;
+          }
           default:
             PlayerController._impl?.addDebugMessage?.({
               type: "CUSTOM_MESSAGE_UNKNOWN",

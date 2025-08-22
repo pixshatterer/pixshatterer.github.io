@@ -96,13 +96,6 @@ const functions = {
     }
     return airingProgramContentDetail;
   },
-  getFuturePrograms: async (channelId, airingEndTime) => {
-    const nextProgramContentDetail = await getFutureProgramsBychannelId({
-      channelId,
-      airingEndTime,
-    });
-    return nextProgramContentDetail;
-  },
   setupPlayerDsl: async ({ contentType, id }) => {
     const isVod = contentType === "VOD";
     let airingProgramContentDetail = { resultObj: { containers: [] } };

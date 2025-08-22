@@ -529,4 +529,9 @@ export const PlayerController = {
   reset() {
     return this._impl?.reset?.();
   },
+
+  loadAsset(assetData) {
+    sendMessageToSenders("ID_TO_DITU_CORE", { assetData });
+    //return this._impl?.loadStreamById?.(streamId);
+  }
 };
