@@ -106,7 +106,6 @@ export async function initializeCastReceiver() {
     }
 
     castContext = cast.framework.CastReceiverContext.getInstance();
-
     // Configure Cast receiver options
     const receiverOptions = new cast.framework.CastReceiverOptions();
     receiverOptions.maxInactivity = 6000; // 10 minutes
@@ -132,7 +131,7 @@ export async function initializeCastReceiver() {
       };
     };
     // Add custom message listener BEFORE starting (required)
-    castContext.addCustomMessageListener(NAMESPACE, (event) => {
+    castContext.addCustomMessageListener(NAMESPACE, async (event) => {
       // Log debug message
       PlayerController._impl?.addDebugMessage?.({
         type: "CUSTOM_MESSAGE",
@@ -141,66 +140,47 @@ export async function initializeCastReceiver() {
       });
 
       // Simply pass message data to PlayerController - let it handle everything
-      const type = event.data?.type;
-      if (type === "LOAD_STREAM" && event.data?.streamData) {
-        try {
-          // Validate and pass to PlayerController - no duplication
-          const streamData = event.data.streamData;
-          // Extract title from customData attribute
-          const customData = streamData?.customData || {};
-          const title =
-            (customData.title || "") +
-            (customData.episodeTitle ? ` - ${customData.episodeTitle}` : "");
-          const finalTitle = title.trim() || "Untitled Stream";
-
-          // Basic validation only
-          if (!streamData?.url) {
-            throw new Error("Stream URL is required");
+      const playerManager = castContext.getPlayerManager();
+      const { data } = event || {};
+      const type = data?.type;
+      let result;
+      try {
+        switch (type) {
+          case "PLAY":
+            result = await playerManager.play();
+            sendMessageToSenders("PLAY", { result });
+            break;
+          case "PAUSE":
+            result = await playerManager.pause();
+            sendMessageToSenders("PAUSE", { result });
+            break;
+          case "SEEK": {
+            const t = Number(data?.position);
+            if (!Number.isFinite(t) || t < 0)
+              throw new Error("invalid_position");
+            result = await playerManager.seek(t);
+            sendMessageToSenders("SEEK", { result });
+            break;
           }
-
-          // Read isLive from customData (default to false if not present)
-          const isLive = customData.isLive ?? false;
-
-          // Debug what we received
-          PlayerController._impl?.addDebugMessage?.({
-            type: "STREAM_DATA_RECEIVED",
-            data: {
-              isLive: isLive,
-              isLiveType: typeof isLive,
-              isLiveValue: JSON.stringify(isLive),
-              url: streamData.url,
-              title: finalTitle,
-              contentType: streamData.contentType,
-              customData: customData,
-            },
-            source: "CAST_MESSAGE",
-          });
-
-          // Let PlayerController handle all the logic reactively
-          const streamType = isLive
-            ? cast.framework.messages.StreamType.LIVE
-            : cast.framework.messages.StreamType.BUFFERED;
-
-          PlayerController.loadStream({
-            url: streamData.url || "",
-            title: finalTitle,
-            contentType: streamData.contentType || "application/dash+xml",
-            isLive: isLive,
-            streamType: streamType,
-          });
-
-          PlayerController._impl?.addDebugMessage?.({
-            type: "STREAM_PASSED_TO_CONTROLLER",
-            data: { success: true },
-            source: "CAST_MESSAGE",
-          });
-        } catch (error) {
-          PlayerController._impl?.addDebugError?.({
-            message: "Error processing Cast message",
-            data: error,
-            source: "CAST_MESSAGE",
-          });
+          case "LOAD_STREAM": {
+            const streamData = data?.streamData || {}
+            PlayerController._impl?.loadStream?.(streamData);
+            sendMessageToSenders("LOAD_STREAM", { streamData });
+            break;
+          }
+          default:
+            PlayerController._impl?.addDebugMessage?.({
+              type: "CUSTOM_MESSAGE_UNKNOWN",
+              data: event.data,
+              source: "CAST_SENDER",
+            });
         }
+      } catch (error) {
+        PlayerController._impl?.addDebugError?.({
+          message: "Error initializing Custom Message Listener",
+          data: error,
+          source: "CAST_SERVICE",
+        });
       }
     });
 

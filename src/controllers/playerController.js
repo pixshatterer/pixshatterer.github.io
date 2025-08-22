@@ -34,7 +34,6 @@ export const PlayerController = {
         currentTime: videoStore.currentTime,
         url: videoStore.url,
         title: videoStore.title,
-        isLive: videoStore.isLive,
         streamType: videoStore.streamType,
       },
     });
@@ -105,7 +104,7 @@ export const PlayerController = {
     const playerManager = castContext.getPlayerManager();
     if (!playerManager) return;
 
-    // Configure player for better quality (DRM config via customData removed)
+    // Configure player for better quality
     if (playerManager.setMediaPlaybackInfoHandler) {
       playerManager.setMediaPlaybackInfoHandler(
         (loadReq, mediaPlaybackInfo) => {
@@ -132,9 +131,6 @@ export const PlayerController = {
       playerManager.setMessageInterceptor(
         cast.framework.messages.MessageType.LOAD,
         async (request) => {
-          // Entitlement URL check (block playback if not allowed)
-          const entitlementUrl = request.media?.customData?.entitlementUrl;
-
           // Handle Quality Optimization
           if (request.media) {
             request.media.customData = {
@@ -406,23 +402,8 @@ export const PlayerController = {
       const url = videoStore.url;
       const title = videoStore.title;
       const contentType = videoStore.contentType;
-      const isLive = videoStore.isLive;
       const streamType = videoStore.streamType;
-
-      // Debug the entire videoStore state via overlay
-      this._impl?.addDebugMessage?.({
-        type: "STORE_STATE_DEBUG",
-        data: {
-          url: videoStore.url,
-          title: videoStore.title,
-          contentType: videoStore.contentType,
-          isLive: videoStore.isLive,
-          streamType: videoStore.streamType,
-          isLiveType: typeof videoStore.isLive,
-          isLiveValue: JSON.stringify(videoStore.isLive),
-        },
-        source: "REACTIVE_DEBUG",
-      });
+      const customData = videoStore.customData;
 
       if (url?.trim()) {
         this._impl?.addDebugMessage?.({
@@ -431,8 +412,8 @@ export const PlayerController = {
             url,
             title,
             contentType,
-            isLive,
             streamType,
+            customData,
           },
           source: "REACTIVE_CONTROL",
         });
@@ -451,21 +432,14 @@ export const PlayerController = {
             mediaInfo.metadata =
               new cast.framework.messages.GenericMediaMetadata();
             mediaInfo.metadata.title = title;
-            mediaInfo.metadata.subtitle = `${isLive ? "LIVE" : "VOD"} Stream`;
-
+            mediaInfo.metadata.subtitle = `sub-${title}`
             // Add additional metadata for better display
             mediaInfo.metadata.images = [
               {
                 url: "https://via.placeholder.com/480x270/000000/FFFFFF?text=Video",
               },
             ];
-          } else {
-            // Even without title, provide basic metadata
-            mediaInfo.metadata =
-              new cast.framework.messages.GenericMediaMetadata();
-            mediaInfo.metadata.title = isLive ? "Live Stream" : "Video Stream";
-            mediaInfo.metadata.subtitle = contentType || "Media Stream";
-          }
+          } 
 
           // Debug the metadata we're setting
           this._impl?.addDebugMessage?.({
@@ -505,7 +479,6 @@ export const PlayerController = {
               success: true,
               url,
               streamType: mediaInfo.streamType,
-              isLiveFromStore: isLive,
             },
             source: "REACTIVE_CONTROL",
           });
@@ -517,7 +490,6 @@ export const PlayerController = {
               url,
               title,
               contentType,
-              isLive,
               streamType: mediaInfo.streamType,
               streamTypeText:
                 streamType === cast.framework.messages.StreamType.LIVE
@@ -532,7 +504,6 @@ export const PlayerController = {
             data: {
               error: error.message || error,
               url,
-              isLive,
               contentType,
             },
             source: "REACTIVE_CONTROL",

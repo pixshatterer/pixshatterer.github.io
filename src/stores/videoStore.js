@@ -1,12 +1,13 @@
 import { createStore } from "solid-js/store";
+import { sendMessageToSenders } from "../services/castService";
 
 export const [videoStore, setVideoStore] = createStore({
   url: "",
   title: "",
   contentType: "",
-  isLive: false,
-  streamType: null, // Will be set based on isLive value
+  streamType: null,
   isPlaying: false,
+  customData: null,
   currentTime: 0,
   // DRM status
   drm: {
@@ -28,13 +29,14 @@ export const [videoStore, setVideoStore] = createStore({
 });
 
 export const videoActions = {
-  loadStream({ url, title, contentType, isLive, streamType }) {
+  loadStream({ url, title, contentType, streamType, customData }) {
+    sendMessageToSenders("STORE_STREAM", { url, title, contentType, streamType, customData });
     setVideoStore({ 
       url, 
       title, 
       contentType,
-      isLive,
-      streamType // streamType is now passed from the caller
+      streamType,
+      customData,
     });
   },
   updatePlayback(partial) {
