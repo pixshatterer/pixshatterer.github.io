@@ -95,22 +95,4 @@ export const videoActions = {
     setVideoStore('debug', 'errors', []);
     setVideoStore('debug', 'errorCount', 0);
   },
-  setDrmStatus(drmInfo) {
-    setVideoStore('drm', {
-      isConfigured: true,
-      systems: drmInfo.systems || [],
-      licenseUrl: drmInfo.licenseUrl || null,
-      hasHeaders: drmInfo.hasHeaders || false,
-      configuredAt: new Date().toISOString()
-    });
-  },
-  clearDrmStatus() {
-    setVideoStore('drm', {
-      isConfigured: false,
-      systems: [],
-      licenseUrl: null,
-      hasHeaders: false,
-      configuredAt: null
-    });
-  }
 };

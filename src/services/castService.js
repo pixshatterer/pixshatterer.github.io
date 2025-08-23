@@ -110,6 +110,28 @@ export async function initializeCastReceiver() {
     const receiverOptions = new cast.framework.CastReceiverOptions();
     receiverOptions.maxInactivity = 6000; // 10 minutes
     receiverOptions.playbackConfig = new cast.framework.PlaybackConfig();
+    // shaka settings
+    receiverOptions.playbackConfig.shakaConfig = {     
+      drm: {
+        servers: {
+          "com.widevine.alpha": `${
+            import.meta.env.VITE_BASE_URL
+          }/CONTENT/LICENSE`,
+        },
+      },
+      manifest: {
+        dash: { ignoreMinBufferTime: true },
+        retryParameters: { maxAttempts: 3 },
+      },
+      streaming: {
+        stallSkip: 0.2,
+        bufferingGoal: 12,
+        rebufferingGoal: 2,
+        bufferBehind: 5,
+        retryParameters: { maxAttempts: 5, backoffFactor: 2 },
+      },
+      abr: { enabled: true },
+    };
 
     // Enable adaptive bitrate with quality preferences
     receiverOptions.playbackConfig.autoResumeDuration = 5;
@@ -117,15 +139,17 @@ export async function initializeCastReceiver() {
     // Enable DRM settings
     receiverOptions.playbackConfig.protectionSystem =
       cast.framework.ContentProtection.WIDEVINE;
-    receiverOptions.playbackConfig.licenseUrl =
-      import.meta.env.VITE_LICENSE_URL;
+    /*
+      receiverOptions.playbackConfig.licenseUrl = `${
+      import.meta.env.VITE_BASE_URL
+    }/CONTENT/LICENSE`;
+    */
     // This handler runs for each LICENSE request
     receiverOptions.playbackConfig.licenseRequestHandler = (requestInfo) => {
       // Same as request.allowCrossSiteCredentials
       requestInfo.withCredentials = true;
       // Merge/override headers for the license POST
       requestInfo.headers = {
-        ...(requestInfo.headers || {}),
         "Content-Type": "application/octet-stream", // OK for Widevine license POST
         restful: "yes", // your custom header
       };
@@ -163,13 +187,14 @@ export async function initializeCastReceiver() {
             break;
           }
           case "LOAD_STREAM": {
-            const streamData = data?.streamData || {}
+            const streamData = data?.streamData || {};
+            const origin = window.location.origin;
             PlayerController._impl?.loadStream?.(streamData);
-            sendMessageToSenders("LOAD_STREAM", { streamData });
+            sendMessageToSenders("LOAD_STREAM", { origin, ...streamData });
             break;
           }
           case "LOAD_ASSET": {
-            const assetData = data?.assetData || {}
+            const assetData = data?.assetData || {};
             PlayerController._impl?.loadAsset?.(assetData);
             sendMessageToSenders("LOAD_ASSET", { assetData });
             break;

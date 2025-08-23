@@ -105,26 +105,42 @@ export const PlayerController = {
     if (!playerManager) return;
 
     // Configure player for better quality
+    const withQuery = (u, q) => {
+      const url = new URL(u);
+      Object.entries(q).forEach(
+        ([k, v]) => v != null && url.searchParams.set(k, String(v))
+      );
+      return url.toString();
+    };
+
     if (playerManager.setMediaPlaybackInfoHandler) {
-      playerManager.setMediaPlaybackInfoHandler(
-        (loadReq, mediaPlaybackInfo) => {
-          // Only handle quality config here
-          if (mediaPlaybackInfo.supportedMediaCommands) {
-            mediaPlaybackInfo.supportedMediaCommands |=
-              cast.framework.messages.Command.STREAM_VOLUME;
-          }
-          this._impl?.addDebugMessage?.({
-            type: "QUALITY_CONFIG",
-            data: {
-              preferredBitrate: "8Mbps",
-              maxBitrate: "25Mbps",
-              adaptiveBitrate: true,
-            },
+      playerManager.setMediaPlaybackInfoHandler((loadReq, cfg) => {
+        try {
+          const drm = {
+            ...(videoStore.customData?.drm || {}),
+            ...(loadReq.media?.customData?.drm || {}),
+          };
+
+          cfg.licenseUrl = withQuery(drm.licenseUrl || cfg.licenseUrl, {
+            contentId: drm.contentId || loadReq.media?.customData?.contentId,
+            tenant: drm.tenant,
+            sessionId: drm.sessionId,
+          });
+          return cfg;
+        } catch (error) {
+          PlayerController._impl?.addDebugError?.({
+            message: "Failed to set media playback info",
+            data: { error: error.message || error },
             source: "PLAYER_CONTROLLER",
           });
-          return mediaPlaybackInfo;
+          sendMessageToSenders("PLAYER_ERROR", {
+            url: loadReq.media || {},
+            customData: loadReq.media?.customData || {},
+            drm: loadReq.media?.customData?.drm || {},
+            error: error.message || error,
+          });
         }
-      );
+      });
     }
     // Set up load interceptor for quality optimization and entitlement check with retry, timeout, and CORS error reporting
     if (playerManager.setMessageInterceptor) {
@@ -432,14 +448,14 @@ export const PlayerController = {
             mediaInfo.metadata =
               new cast.framework.messages.GenericMediaMetadata();
             mediaInfo.metadata.title = title;
-            mediaInfo.metadata.subtitle = `sub-${title}`
+            mediaInfo.metadata.subtitle = `sub-${title}`;
             // Add additional metadata for better display
             mediaInfo.metadata.images = [
               {
                 url: "https://via.placeholder.com/480x270/000000/FFFFFF?text=Video",
               },
             ];
-          } 
+          }
 
           // Debug the metadata we're setting
           this._impl?.addDebugMessage?.({
@@ -461,6 +477,7 @@ export const PlayerController = {
           // Add quality preferences
           request.customData = {
             ...request.customData,
+            ...customData,
             preferredBitrate: 8000000, // 8 Mbps
             maxBitrate: 25000000, // 25 Mbps
             qualityPreferences: {
@@ -533,5 +550,5 @@ export const PlayerController = {
   loadAsset(assetData) {
     sendMessageToSenders("ID_TO_DITU_CORE", { assetData });
     //return this._impl?.loadStreamById?.(streamId);
-  }
+  },
 };
