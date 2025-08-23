@@ -159,6 +159,9 @@ export const PlayerController = {
               },
             };
           }
+          // enforce title
+          request.media.title = videoStore.title;
+          request.media.subtitle = videoStore.subtitle;
 
           this._impl?.addDebugMessage?.({
             type: "LOAD_INTERCEPTED",
