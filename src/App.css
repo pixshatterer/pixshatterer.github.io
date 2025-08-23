@@ -1,11 +1,15 @@
 .app-container {
+	background: var(
+		--Gradient-Color-100,
+		linear-gradient(139deg, #8031ef 4.82%, #5c1ede 95.53%)
+	);
 	width: 100vw;
 	height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center; /* vertical centering */
-  align-items: center;     /* horizontal centering */
-  position: relative;
+	display: flex;
+	flex-direction: column;
+	justify-content: center; /* vertical centering */
+	align-items: center; /* horizontal centering */
+	position: relative;
 }
 
 /* Debug overlay container - two column layout */
@@ -144,26 +148,30 @@
 .standby-message {
 	color: var(--Color-Neutral-Neutral-color-100, #fdfdfd);
 	/* TV/Label/XL */
-	font-family: 'Spline Sans', sans-serif;
+	font-family: "Spline Sans", sans-serif;
 	font-style: normal;
 	font-weight: 700;
-  position: absolute;
-  bottom: 10vh;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 3vh;
-  text-align: center;
+	position: absolute;
+	bottom: 10vh;
+	left: 50%;
+	transform: translateX(-50%);
+	font-size: 3vh;
+	text-align: center;
 }
 
 .ditu-logo-standby {
-  width: 100%;
-  height: auto;
-  object-fit: contain;
+	width: 100%;
+	height: auto;
+	object-fit: contain;
 }
 
 .standby-container {
-  width: 32vw;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+	width: 32vw;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.hidden {
+	visibility: hidden;
 }

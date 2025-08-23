@@ -4,7 +4,7 @@ import "./styles/cast-receiver.css";
 import { initializeCastReceiver } from "./services/castService";
 import { testUtils } from "./utils/testUtils";
 import DebugOverlay from "./components/DebugOverlay";
-import dituLogo from "./assets/ditu_logo_big.png";
+import dituLogo from "./assets/ditu_logo.svg";
 
 export default function App() {
   const isDebug = !!Number(import.meta.env.VITE_DEBUG);

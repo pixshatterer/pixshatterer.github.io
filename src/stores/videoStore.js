@@ -29,9 +29,13 @@ export const [videoStore, setVideoStore] = createStore({
 });
 
 export const videoActions = {
-  loadStream({ url, title, contentType, streamType, customData }) {
+  loadStream({ url, title, contentType, customData }) {
     const metadata = mapMetadata(customData?.metadata || {});
     const finalTitle = metadata.title || title;
+    const streamType =
+      metadata.contentType === "VOD"
+        ? cast.framework.messages.StreamType.BUFFERED
+        : cast.framework.messages.StreamType.LIVE;
 
     sendMessageToSenders("STORE_STREAM", {
       url,

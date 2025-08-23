@@ -3,7 +3,6 @@
   "contentType": "application/dash+xml",
   "autoplay": true,
   "customData": {
-    "isLive": false,
     "drm": {
       "licenseUrl": "https://varnish-dev.d2ccaracoltv.com/AGL/1.5/R/ENG/SAMSUNGTV/ALL/CONTENT/LICENSE",
       "contentId": "1100000026"

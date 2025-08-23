@@ -36,10 +36,6 @@ body {
 	height: 100vh;
 	display: flex;
 	flex-direction: column;
-	background: var(
-		--Gradient-Color-100,
-		linear-gradient(139deg, #8031ef 4.82%, #5c1ede 95.53%)
-	);
 	align-items: center;
 }
 
@@ -104,17 +100,4 @@ code {
 }
 .mt-5 {
 	margin-top: 20px;
-}
-
-/* cast element styles */
-cast-media-player {
-	--background: linear-gradient(135deg, #6d28d9, #7c3aed);
-	--progress-color: var(--Primary-Color-400, #8232F0);
-	--font-family: "Spline Sans", sans-serif;
-
-	/* launch / idle visuals */
-	--logo-image: url("./assets/ditu_logo_big.png");
-	--logo-size: contain;
-	--splash-image: url("./assets/ditu_logo_big.png"); /* overrides logo while idle */
-	--splash-size: cover;
 }

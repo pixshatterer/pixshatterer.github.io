@@ -8,11 +8,23 @@
     <link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <!-- CAF Receiver runtime -->
     <script src="https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
+    <style>
+      /* Cast Media Player styles */
+      cast-media-player {
+        --background: linear-gradient(135deg, #6d28d9, #7c3aed);
+        --progress-color: var(--Primary-Color-400, #8232F0);
+        --font-family: "Spline Sans", sans-serif;
+        --logo-image: url("/public/assets/splash.svg");
+        --logo-size: contain;
+        --splash-image: url("/public/assets/splash.svg"); /* overrides logo while idle */
+        --splash-size: cover;
+      }
+    </style>
   </head>
   <body>
+    <div id="app"></div>
     <!-- Cast Media Player Component -->
     <cast-media-player></cast-media-player>
-    <div id="app"></div>
     <script type="module" src="/src/index.jsx"></script>
   </body>
 </html>

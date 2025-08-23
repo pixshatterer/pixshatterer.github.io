@@ -333,6 +333,27 @@ export const PlayerController = {
       });
     }
 
+    // Dedicated IDLE event listerner
+    if (EventType.IDLE) {
+      playerManager.addEventListener(EventType.IDLE, (event) => {
+        this._impl?.addDebugMessage?.({
+          type: "IDLE_EVENT_DETECTED",
+          data: {
+            currentTime: videoStore.currentTime,
+            eventType: event.type,
+            timestamp: new Date().toISOString(),
+          },
+          source: "CAF_EVENT",
+        });
+        // Send buffering event to senders
+        this.sendPlayerEvent("IDLE", {
+          currentTime: videoStore.currentTime,
+          detectedBy: "idle_event",
+          timestamp: new Date().toISOString(),
+        });
+      });
+    }
+
     // Error handling with 905 error analysis
     if (EventType.ERROR) {
       playerManager.addEventListener(EventType.ERROR, (event) => {
