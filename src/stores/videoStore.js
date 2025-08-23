@@ -15,7 +15,7 @@ export const [videoStore, setVideoStore] = createStore({
     systems: [],
     licenseUrl: null,
     hasHeaders: false,
-    configuredAt: null
+    configuredAt: null,
   },
   // Debug information
   debug: {
@@ -24,18 +24,29 @@ export const [videoStore, setVideoStore] = createStore({
     lastMessage: null,
     lastError: null,
     messageCount: 0,
-    errorCount: 0
-  }
+    errorCount: 0,
+  },
 });
 
 export const videoActions = {
   loadStream({ url, title, contentType, streamType, customData }) {
-    sendMessageToSenders("STORE_STREAM", { url, title, contentType, streamType, customData });
-    setVideoStore({ 
-      url, 
-      title, 
+    const metadata = mapMetadata(customData?.metadata || {});
+    const finalTitle = metadata.title || title;
+
+    sendMessageToSenders("STORE_STREAM", {
+      url,
+      title: finalTitle,
       contentType,
       streamType,
+      metadata,
+      customData,
+    });
+    setVideoStore({
+      url,
+      title: finalTitle,
+      contentType,
+      streamType,
+      metadata,
       customData,
     });
   },
@@ -55,7 +66,7 @@ export const videoActions = {
         systems: [],
         licenseUrl: null,
         hasHeaders: false,
-        configuredAt: null
+        configuredAt: null,
       },
       debug: {
         messages: [],
@@ -63,36 +74,55 @@ export const videoActions = {
         lastMessage: null,
         lastError: null,
         messageCount: 0,
-        errorCount: 0
-      }
+        errorCount: 0,
+      },
     });
   },
   addDebugMessage(message) {
     const timestamp = new Date().toLocaleTimeString();
     const messageWithTime = { ...message, timestamp };
-    
-    setVideoStore('debug', 'messages', prev => [messageWithTime, ...prev].slice(0, 5)); // Keep last 5
-    setVideoStore('debug', 'lastMessage', messageWithTime);
-    setVideoStore('debug', 'messageCount', prev => prev + 1);
+
+    setVideoStore("debug", "messages", (prev) =>
+      [messageWithTime, ...prev].slice(0, 5)
+    ); // Keep last 5
+    setVideoStore("debug", "lastMessage", messageWithTime);
+    setVideoStore("debug", "messageCount", (prev) => prev + 1);
   },
   addDebugError(error) {
     const timestamp = new Date().toLocaleTimeString();
-    const errorWithTime = { 
+    const errorWithTime = {
       message: error.message || error,
       stack: error.stack,
-      timestamp 
+      timestamp,
     };
-    
-    setVideoStore('debug', 'errors', prev => [errorWithTime, ...prev].slice(0, 5)); // Keep last 5
-    setVideoStore('debug', 'lastError', errorWithTime);
-    setVideoStore('debug', 'errorCount', prev => prev + 1);
+
+    setVideoStore("debug", "errors", (prev) =>
+      [errorWithTime, ...prev].slice(0, 5)
+    ); // Keep last 5
+    setVideoStore("debug", "lastError", errorWithTime);
+    setVideoStore("debug", "errorCount", (prev) => prev + 1);
   },
   clearDebugMessages() {
-    setVideoStore('debug', 'messages', []);
-    setVideoStore('debug', 'messageCount', 0);
+    setVideoStore("debug", "messages", []);
+    setVideoStore("debug", "messageCount", 0);
   },
   clearDebugErrors() {
-    setVideoStore('debug', 'errors', []);
-    setVideoStore('debug', 'errorCount', 0);
+    setVideoStore("debug", "errors", []);
+    setVideoStore("debug", "errorCount", 0);
   },
+};
+
+/*
+helpers
+*/
+const mapMetadata = (meta = {}) => {
+  return {
+    contentType: meta.contentType,
+    title: meta.episodeTitle,
+    subtitle: meta.longDescription,
+    releaseYear: meta.year,
+    season: meta.season,
+    episode: meta.episodeNumber,
+    seriesTitle: meta.seriesTitle,
+  };
 };

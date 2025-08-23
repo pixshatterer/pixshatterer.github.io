@@ -420,6 +420,7 @@ export const PlayerController = {
       const contentType = videoStore.contentType;
       const streamType = videoStore.streamType;
       const customData = videoStore.customData;
+      const metadata = videoStore.metadata;
 
       if (url?.trim()) {
         this._impl?.addDebugMessage?.({
@@ -447,14 +448,8 @@ export const PlayerController = {
           if (title) {
             mediaInfo.metadata =
               new cast.framework.messages.GenericMediaMetadata();
-            mediaInfo.metadata.title = title;
-            mediaInfo.metadata.subtitle = `sub-${title}`;
-            // Add additional metadata for better display
-            mediaInfo.metadata.images = [
-              {
-                url: "https://via.placeholder.com/480x270/000000/FFFFFF?text=Video",
-              },
-            ];
+            mediaInfo.metadata.title = metadata.title;
+            mediaInfo.metadata.subtitle = metadata.subtitle;
           }
 
           // Debug the metadata we're setting

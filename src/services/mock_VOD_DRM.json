@@ -1,0 +1,165 @@
+{
+  "url": "https://vod-dev.d2ccaracoltv.com/out/v1/5aa4001e51d3419b9532d5856bba3c78/c27fbb06e3454a03b998939f6e3b3c98/646acfda03274481a27ddd45e657c171/index.mpd",
+  "contentType": "application/dash+xml",
+  "autoplay": true,
+  "customData": {
+    "isLive": false,
+    "drm": {
+      "licenseUrl": "https://varnish-dev.d2ccaracoltv.com/AGL/1.5/R/ENG/SAMSUNGTV/ALL/CONTENT/LICENSE",
+      "contentId": "1100000026"
+    },
+    "metadata": {
+      "contentId": 1100000033,
+      "contentType": "VOD",
+      "longDescription": "La ambición de Catalina crece; se plantea operarse para atraer a los capos.",
+      "year": "2006",
+      "contractStartDate": 1359158400000,
+      "contractEndDate": 2051222400000,
+      "externalId": "CARA0000111005010003",
+      "title": "Sin tetas no hay Paraíso",
+      "duration": 2639,
+      "originalAirDate": 1136073600000,
+      "contentSubtype": "EPISODE",
+      "popularity": {
+        "KPI": 1,
+        "Boost": 1
+      },
+      "starRating": 0,
+      "pictureUrl": "1005000000/1005010000/1005010003",
+      "language": "SPA",
+      "season": 1,
+      "episodeNumber": 3,
+      "episodeTitle": "Episodio 3",
+      "isGeoBlocked": false,
+      "pcLevel": 18,
+      "pcExtendedRatings": ["SX", "V", "VS", "AD"],
+      "isCopyProtected": true,
+      "copyProtections": [
+        {
+          "securityCode": "01",
+          "securityOption": "00000010"
+        },
+        {
+          "securityCode": "03",
+          "securityOption": "00000001"
+        },
+        {
+          "securityCode": "05",
+          "securityOption": "00000001"
+        }
+      ],
+      "actors": [
+        "Maria Adelaida Puerta",
+        "Patricia Ercole",
+        "Sandra Beltrán",
+        "Nicolás Rincón",
+        "Andrés Toro",
+        "Marlon Moreno"
+      ],
+      "authors": ["Claudia Valencia"],
+      "directors": ["Luis Alberto Restrepo"],
+      "genres": ["Drama", "Crimen"],
+      "availableAlso": ["ANDROID_TABLET", "IPAD", "ANDROID", "IOS"],
+      "advertisingInfoList": [
+        {
+          "advertisingContentId": "1",
+          "networkID": "1",
+          "cuePointList": [
+            {
+              "customSlotId": "",
+              "sequence": 0,
+              "timePositionClass": "PREROLL",
+              "contentEndTimePosition": 0,
+              "adFormat": "CLEAN",
+              "timeToNextAdUnit": 0,
+              "contentTimePosition": 0
+            },
+            {
+              "customSlotId": "",
+              "sequence": 1,
+              "timePositionClass": "MIDROLL",
+              "contentEndTimePosition": 0,
+              "adFormat": "CLEAN",
+              "timeToNextAdUnit": 0,
+              "contentTimePosition": 668
+            },
+            {
+              "customSlotId": "",
+              "sequence": 2,
+              "timePositionClass": "MIDROLL",
+              "contentEndTimePosition": 0,
+              "adFormat": "CLEAN",
+              "timeToNextAdUnit": 0,
+              "contentTimePosition": 1189
+            },
+            {
+              "customSlotId": "",
+              "sequence": 3,
+              "timePositionClass": "MIDROLL",
+              "contentEndTimePosition": 0,
+              "adFormat": "CLEAN",
+              "timeToNextAdUnit": 0,
+              "contentTimePosition": 1624
+            },
+            {
+              "customSlotId": "",
+              "sequence": 4,
+              "timePositionClass": "MIDROLL",
+              "contentEndTimePosition": 0,
+              "adFormat": "CLEAN",
+              "timeToNextAdUnit": 0,
+              "contentTimePosition": 2095
+            }
+          ]
+        }
+      ],
+      "contentOptions": [],
+      "extendedMetadata": {
+        "vodDescriptionFormat": ["EPISODE_NAME"],
+        "tagValue": "Telenovela",
+        "linearDescriptionFormat": ["EPISODE_NAME"]
+      },
+      "recentlyAdded": false,
+      "emfAttributes": {
+        "vodADTAGUrl": "https://pubads.g.doubleclick.net/gampad/ads?iu=/100249493/Ditu/VOD/Preroll-Prueba&description_url=https%3A%2F%2Fditutv.lat%2F&tfcd=0&npa=0&sz=640x480&gdfp_req=1&unviewed_position_start=1&output=vast&env=vp&vpmute=1&plcmt=1&ad_rule=0&impl=s&correlator="
+      },
+      "comingSoon": false,
+      "leavingSoon": false
+    },
+    "assets": [
+      {
+        "assetId": 6505,
+        "assetType": "MASTER",
+        "assetName": "VOD_SD",
+        "videoType": "SD",
+        "audioLanguages": [
+          {
+            "audioId": 1,
+            "audioLanguageName": "SPA",
+            "isPreferred": false
+          }
+        ]
+      },
+      {
+        "assetId": 650500,
+        "assetType": "TRAILER",
+        "assetName": "VOD_SD",
+        "videoType": "SD",
+        "audioLanguages": [
+          {
+            "audioId": 1,
+            "audioLanguageName": "SPA",
+            "isPreferred": false
+          }
+        ]
+      }
+    ],
+    "parents": [
+      {
+        "parentId": 1630000018,
+        "parentType": "BUNDLE",
+        "parentSubType": "SOAP_OPERA"
+      }
+    ]
+  }
+}
