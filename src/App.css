@@ -1,142 +1,169 @@
 .app-container {
-  padding: 16px;
-  max-width: 800px;
-  margin: 0 auto;
-  position: absolute;
-  top: 5%;
-  left: 5%;
-  opacity: 0.7;
+	width: 100vw;
+	height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* vertical centering */
+  align-items: center;     /* horizontal centering */
+  position: relative;
 }
 
 /* Debug overlay container - two column layout */
 .debug-overlay-container {
-  position: fixed;
-  top: 10vh;
-  left: 2vw;
-  width: 60vw;
-  height: 80vh;
-  display: flex;
-  gap: 16px;
-  z-index: 1000;
-  pointer-events: none; /* Allow video interaction underneath */
+	position: fixed;
+	top: 10vh;
+	left: 2vw;
+	width: 60vw;
+	height: 80vh;
+	display: flex;
+	gap: 16px;
+	z-index: 1000;
+	pointer-events: none; /* Allow video interaction underneath */
 }
 
 .debug-column {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  pointer-events: auto; /* Re-enable pointer events for debug content */
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	pointer-events: auto; /* Re-enable pointer events for debug content */
 }
 
 .debug-column-left {
-  background: rgba(0, 0, 0, 0.8);
-  border: 1px solid #333;
-  border-radius: 4px;
-  padding: 12px;
-  overflow-y: auto;
+	background: rgba(0, 0, 0, 0.8);
+	border: 1px solid #333;
+	border-radius: 4px;
+	padding: 12px;
+	overflow-y: auto;
 }
 
 .debug-column-right {
-  /* DebugOverlay component handles its own styling */
-  min-height: 0; /* Allow flexbox shrinking */
+	/* DebugOverlay component handles its own styling */
+	min-height: 0; /* Allow flexbox shrinking */
 }
 
 .video-info-header {
-  font-weight: bold;
-  color: #4CAF50;
-  margin-bottom: 12px;
-  font-size: 14px;
-  border-bottom: 1px solid #333;
-  padding-bottom: 4px;
+	font-weight: bold;
+	color: #4caf50;
+	margin-bottom: 12px;
+	font-size: 14px;
+	border-bottom: 1px solid #333;
+	padding-bottom: 4px;
 }
 
 .app-title {
-  font-size: 18px;
-  margin-bottom: 20px;
-  color: #fff;
+	font-size: 18px;
+	margin-bottom: 20px;
+	color: #fff;
 }
 
 /* Error display */
 .error-message {
-  color: #ff6b6b;
-  margin-bottom: 16px;
-  padding: 8px;
-  border: 1px solid #ff6b6b;
-  border-radius: 4px;
-  background-color: rgba(255, 107, 107, 0.1);
+	color: #ff6b6b;
+	margin-bottom: 16px;
+	padding: 8px;
+	border: 1px solid #ff6b6b;
+	border-radius: 4px;
+	background-color: rgba(255, 107, 107, 0.1);
 }
 
 /* Status indicators */
 .status-section {
-  margin-bottom: 16px;
+	margin-bottom: 16px;
 }
 
 .status-item {
-  margin-bottom: 4px;
-  font-weight: 500;
+	margin-bottom: 4px;
+	font-weight: 500;
 }
 
 .status-ready {
-  color: #51cf66;
+	color: #51cf66;
 }
 
 .status-pending {
-  color: #ffd43b;
+	color: #ffd43b;
 }
 
 .status-connected {
-  color: #51cf66;
+	color: #51cf66;
 }
 
 .status-disconnected {
-  color: #868e96;
+	color: #868e96;
 }
 
 /* Video info display */
 .video-info {
-  margin-bottom: 16px;
+	margin-bottom: 16px;
 }
 
 .video-info-item {
-  margin-bottom: 8px;
-  padding: 4px 0;
+	margin-bottom: 8px;
+	padding: 4px 0;
 }
 
 .video-info-label {
-  font-weight: bold;
-  margin-right: 8px;
+	font-weight: bold;
+	margin-right: 8px;
 }
 
 .video-info-value {
-  color: #adb5bd;
+	color: #adb5bd;
 }
 
 /* Developer info panel */
 .developer-info {
-  margin-top: 20px;
-  padding: 12px;
-  background: #333;
-  border-radius: 4px;
-  font-size: 12px;
-  border-left: 4px solid #339af0;
+	margin-top: 20px;
+	padding: 12px;
+	background: #333;
+	border-radius: 4px;
+	font-size: 12px;
+	border-left: 4px solid #339af0;
 }
 
 .developer-info-title {
-  margin-bottom: 8px;
-  font-weight: bold;
-  color: #339af0;
+	margin-bottom: 8px;
+	font-weight: bold;
+	color: #339af0;
 }
 
 .developer-info-item {
-  margin-bottom: 4px;
-  line-height: 1.4;
+	margin-bottom: 4px;
+	line-height: 1.4;
 }
 
 .developer-info code {
-  background: #212529;
-  padding: 2px 4px;
-  border-radius: 2px;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  color: #51cf66;
+	background: #212529;
+	padding: 2px 4px;
+	border-radius: 2px;
+	font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+	color: #51cf66;
+}
+
+.standby-message {
+	color: var(--Color-Neutral-Neutral-color-100, #fdfdfd);
+	/* TV/Label/XL */
+	font-family: 'Spline Sans', sans-serif;
+	font-style: normal;
+	font-weight: 700;
+  position: absolute;
+  bottom: 10vh;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 3vh;
+  text-align: center;
+}
+
+.ditu-logo-standby {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.standby-container {
+  width: 32vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }

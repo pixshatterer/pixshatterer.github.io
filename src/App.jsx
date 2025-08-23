@@ -4,6 +4,7 @@ import "./styles/cast-receiver.css";
 import { initializeCastReceiver } from "./services/castService";
 import { testUtils } from "./utils/testUtils";
 import DebugOverlay from "./components/DebugOverlay";
+import dituLogo from "./assets/ditu_logo_big.png";
 
 export default function App() {
   const isDebug = !!Number(import.meta.env.VITE_DEBUG);
@@ -28,6 +29,10 @@ export default function App() {
           <DebugOverlay />
         </div>
       </Show>
+      <div class="standby-container">
+        <img src={dituLogo} alt="Ditu Logo" class="ditu-logo-standby" />
+        <h2 class="standby-message">{import.meta.env.VITE_STANDBY_MSG}</h2>
+      </div>
     </div>
   );
 }

@@ -1,72 +1,120 @@
 :root {
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  
-  /* Cast receiver typically uses dark theme */
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #000;
-  
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+	font-family:
+		system-ui,
+		-apple-system,
+		Segoe UI,
+		Roboto,
+		sans-serif;
+	line-height: 1.5;
+	font-weight: 400;
+
+	/* Cast receiver typically uses dark theme */
+	color: rgba(255, 255, 255, 0.87);
+	background-color: #000;
+
+	font-synthesis: none;
+	text-rendering: optimizeLegibility;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 * {
-  box-sizing: border-box;
+	box-sizing: border-box;
 }
 
 body {
-  margin: 0;
-  padding: 0;
-  min-width: 320px;
-  min-height: 100vh;
-  background-color: #000;
-  color: #fff;
+	margin: 0;
+	padding: 0;
+	min-width: 320px;
+	min-height: 100vh;
+	background-color: #000;
+	color: #fff;
 }
 
 #app {
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
+	width: 100vw;
+	height: 100vh;
+	display: flex;
+	flex-direction: column;
+	background: var(
+		--Gradient-Color-100,
+		linear-gradient(139deg, #8031ef 4.82%, #5c1ede 95.53%)
+	);
+	align-items: center;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  margin: 0 0 0.5em 0;
-  line-height: 1.2;
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	margin: 0 0 0.5em 0;
+	line-height: 1.2;
 }
 
 p {
-  margin: 0 0 1em 0;
+	margin: 0 0 1em 0;
 }
 
 code {
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 0.9em;
-  background: rgba(255, 255, 255, 0.1);
-  padding: 2px 4px;
-  border-radius: 2px;
+	font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+	font-size: 0.9em;
+	background: rgba(255, 255, 255, 0.1);
+	padding: 2px 4px;
+	border-radius: 2px;
 }
 
 /* Utility classes */
 .text-center {
-  text-align: center;
+	text-align: center;
 }
 
 .text-left {
-  text-align: left;
+	text-align: left;
 }
 
-.mb-1 { margin-bottom: 4px; }
-.mb-2 { margin-bottom: 8px; }
-.mb-3 { margin-bottom: 12px; }
-.mb-4 { margin-bottom: 16px; }
-.mb-5 { margin-bottom: 20px; }
+.mb-1 {
+	margin-bottom: 4px;
+}
+.mb-2 {
+	margin-bottom: 8px;
+}
+.mb-3 {
+	margin-bottom: 12px;
+}
+.mb-4 {
+	margin-bottom: 16px;
+}
+.mb-5 {
+	margin-bottom: 20px;
+}
 
-.mt-1 { margin-top: 4px; }
-.mt-2 { margin-top: 8px; }
-.mt-3 { margin-top: 12px; }
-.mt-4 { margin-top: 16px; }
-.mt-5 { margin-top: 20px; }
+.mt-1 {
+	margin-top: 4px;
+}
+.mt-2 {
+	margin-top: 8px;
+}
+.mt-3 {
+	margin-top: 12px;
+}
+.mt-4 {
+	margin-top: 16px;
+}
+.mt-5 {
+	margin-top: 20px;
+}
+
+/* cast element styles */
+cast-media-player {
+	--background: linear-gradient(135deg, #6d28d9, #7c3aed);
+	--progress-color: var(--Primary-Color-400, #8232F0);
+	--font-family: "Spline Sans", sans-serif;
+
+	/* launch / idle visuals */
+	--logo-image: url("./assets/ditu_logo_big.png");
+	--logo-size: contain;
+	--splash-image: url("./assets/ditu_logo_big.png"); /* overrides logo while idle */
+	--splash-size: cover;
+}
